@@ -6,96 +6,97 @@ import urllib
 import urllib2
 import xml.etree.ElementTree as ET
 import json
-import time
 import os
 import zipfile
 
 
-def load_csv_lines(name):
-    cities = []
-    full_path = os.path.join(os.path.dirname(__file__), name)
-    with codecs.open(full_path, encoding='utf-8') as f:
-        return f.readlines()
-
-
-def load_cities():
-    cities = []
-    for l in load_csv_lines('cities.dict'):
-        parts = l.rstrip().split(',')
-        cities.append({
-            'id': parts[0],
-            'country': parts[1],
-            'latitude': parts[2],
-            'longitude': parts[3],
-            'height': parts[4],
-            'width': parts[5],
-            'en': parts[6],
-            'ru': parts[7]
-        })
-    return cities
+def load_geo_names():
+    names = []
+    with codecs.open(os.path.join(os.path.dirname(__file__), 'cities.dict'), encoding='utf-8') as f:
+        for l in f.readlines():
+            parts = l.rstrip().split('\t')
+            if len(parts) <= 8: continue
+            names.append({
+                'id': parts[0],
+                'name': parts[1],
+                'ascii-name': parts[2],
+                'search': parts[3],
+                'latitude': parts[4],
+                'longitude': parts[5],
+                'iso': parts[8]
+            })
+    return names
 
 
 def load_countries():
     countries = []
-    for l in load_csv_lines('countries.dict'):
-        parts = l.rstrip().split(',')
-        countries.append({
-            'id': parts[0],
-            'iso': parts[1],
-            'abr': parts[2],
-            'en': parts[3],
-            'ru': parts[4]
-        })
+    with codecs.open(os.path.join(os.path.dirname(__file__), 'countries.dict'), encoding='utf-8') as f:
+        for l in f.readlines():
+            parts = l.rstrip().split(',')
+            countries.append({
+                'id': parts[0],
+                'iso': parts[1],
+                'abr': parts[2],
+                'en': parts[3],
+                'ru': parts[4]
+            })
     return countries
 
 
-def find_city(cities, name):
-    for c in cities:
-        if c['en'] == name or c['ru'] == name:
-            return c
+def find_geo_name(geo_names, name):
+    for c in geo_names:
+        if name == c['name'] or name == c['ascii-name']: return c
+
+    for c in geo_names:
+        if name in c['search']:
+            for p in c['search'].split(','):
+                if name == p: return c
+
+    for c in geo_names:
+        if name in c['search']: return c
+
     return None
 
 
-def find_country(countries, name):
+def find_country(countries, iso):
     for c in countries:
-        if c['en'] == name or c['ru'] == name:
-            return c
-    return None
-
-
-def find_country_by_id(countries, id):
-    for c in countries:
-        if c['id'] == id:
-            return c
+        if iso == c['iso']: return c
     return None
 
 
 def download_map_index(service_url):
-
-    cities = load_cities()
+    geo_names = load_geo_names()
     countries = load_countries()
 
     xml_maps = urllib.urlopen(service_url + 'Files.xml').read().decode('windows-1251').encode('utf-8')
     maps = []
+    max_version = 0
     for el in ET.fromstring(xml_maps):
         if el.find('City').attrib['Country'] == u' Программа' or el.find('City').attrib['CityName'] == u'':
             continue
 
-        country_name = find_country(countries, el.find('City').attrib['Country'])
-        city_name = find_city(cities, el.find('City').attrib['CityName'])
+        geo_name = find_geo_name(geo_names, el.find('City').attrib['CityName'])
 
-        if country_name is None or city_name is None:
-            print el.find('City').attrib['CityName']
+        if geo_name is None:
             continue
 
+        version = int(el.find('Zip').attrib['Date'])
+        if version > max_version: max_version = version
+
+        print geo_name['name'], geo_name['iso']
+
         maps.append({
-            'city': city_name['en'],
-            'country': country_name['en'],
-            'url': el.find('Zip').attrib['Name'],
-            'date': int(el.find('Zip').attrib['Date']),
+            'id': geo_name['id'],
+            'city': geo_name['name'],
+            'iso': geo_name['iso'],
+            'country': find_country(countries, geo_name['iso'])['en'],
+            'latitude': geo_name['latitude'],
+            'longitude': geo_name['longitude'],
+            'file': el.find('Zip').attrib['Name'],
+            'version': version,
             'size': int(el.find('Zip').attrib['Size'])
         })
-    return {'version': 1, 'date': time.time(), 'maps': maps}
+    return {'version': max_version, 'maps': maps}
 
 
 def store_map_index(map_index, path):
@@ -104,17 +105,16 @@ def store_map_index(map_index, path):
             json.dumps(map_index, ensure_ascii=False, indent=True))
 
 
-def download_map_index_files(maps, service_url, folder):
+def download_maps(maps, service_url, folder):
     for m in maps['maps']:
-        req = urllib2.urlopen(service_url + m['url'])
+        req = urllib2.urlopen(service_url + m['file'])
         chunk_size = 16 * 1024
-        with open(os.path.join(folder, m['url']), 'wb') as fp:
+        with open(os.path.join(folder, m['file']), 'wb') as fp:
             while True:
                 chunk = req.read(chunk_size)
                 if not chunk: break
                 fp.write(chunk)
-        print m['url'] + ' downloaded'
-        return
+        print m['file'] + ' downloaded'
 
 
 def pack_file(filename, name, archive):

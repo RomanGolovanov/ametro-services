@@ -12,6 +12,5 @@ pmetro_url = 'http://pmetro.chpeks.com/'
 
 maps = pmetro.download_map_index(pmetro_url)
 pmetro.store_map_index(maps, os.path.join(working_folder, 'maps.json'))
-
-#pmetro.download_map_index_files(maps, pmetro_url, working_folder)
+pmetro.download_maps(maps, pmetro_url, working_folder)
 
