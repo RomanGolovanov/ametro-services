@@ -8,8 +8,10 @@ working_folder = 'maps'
 if not os.path.isdir(working_folder):
     os.mkdir(working_folder)
 
-maps = pmetro.download_map_index('http://pmetro.chpeks.com/')
+pmetro_url = 'http://pmetro.chpeks.com/'
+
+maps = pmetro.download_map_index(pmetro_url)
 pmetro.store_map_index(maps, os.path.join(working_folder, 'maps.json'))
 
-pmetro.download_map_index_files(maps, working_folder)
+#pmetro.download_map_index_files(maps, pmetro_url, working_folder)
 
