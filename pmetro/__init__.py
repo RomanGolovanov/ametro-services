@@ -105,6 +105,12 @@ def store_map_index(map_index, path):
             json.dumps(map_index, ensure_ascii=False, indent=True))
 
 
+def store_map_index_version(map_index, path):
+    with codecs.open(path, 'w', 'utf-8') as f:
+        f.write(
+            json.dumps({ 'version': map_index['version'] }, ensure_ascii=False, indent=True))
+
+
 def download_maps(maps, service_url, folder):
     for m in maps['maps']:
         req = urllib2.urlopen(service_url + m['file'])
