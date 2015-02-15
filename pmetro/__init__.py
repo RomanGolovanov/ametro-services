@@ -185,9 +185,9 @@ def __create_map_info(map_path, map_obj):
     description = []
     while reader.read():
         if reader.name() == 'comment':
-            comments.append(reader.value())
+            comments.append(reader.value().replace('\\n','\n').rstrip())
         if reader.name() == 'mapauthors':
-            description.append(reader.value())
+            description.append(reader.value().replace('\\n','\n').rstrip())
 
     if any(comments):
         map_obj['comments'] = string.join(comments, '\n').rstrip('\n')
