@@ -4,7 +4,7 @@
 import codecs
 
 
-class inireader:
+class IniReader:
     def __init__(self):
         self.lines = []
         self.position = None
