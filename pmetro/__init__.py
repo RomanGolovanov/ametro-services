@@ -101,16 +101,19 @@ def __download_map_index(url):
     return {'version': max_version, 'maps': maps}
 
 
-def __download_map(url, path, map_index):
-    req = urllib2.urlopen(url + map_index['file'])
+def __download_map(url, path, map_item):
+    req = urllib2.urlopen(url + map_item['file'])
     chunk_size = 16 * 1024
-    with open(os.path.join(path, map_index['file'] + ".download"), 'wb') as fp:
+    with open(os.path.join(path, map_item['file'] + ".download"), 'wb') as fp:
         while True:
             chunk = req.read(chunk_size)
             if not chunk:
                 break
             fp.write(chunk)
-    os.rename(os.path.join(path, map_index['file'] + ".download"), os.path.join(path, map_index['file']))
+    os.rename(os.path.join(path, map_item['file'] + ".download"), os.path.join(path, map_item['file']))
+
+def __remove_map(path, map_item):
+    os.rename(os.path.join(path, map_item['file']), os.path.join(path, map_item['file'] + ".removed"))
 
 
 def __find_map_by_file(maps, file_name):
@@ -150,12 +153,12 @@ def load_map_index(path):
         return json.load(f)
 
 
-def refresh_cache(path, url):
-    if not os.path.isdir(path):
-        os.mkdir(path)
+def refresh_cache(cache_path, url):
+    if not os.path.isdir(cache_path):
+        os.mkdir(cache_path)
 
     maps_new = __download_map_index(url)
-    maps_index_path = os.path.join(path, "index.json")
+    maps_index_path = os.path.join(cache_path, "index.json")
 
     try:
         maps_old = load_map_index(maps_index_path)
@@ -163,22 +166,39 @@ def refresh_cache(path, url):
         maps_old = None
 
     if maps_old is None:
-        for m in maps_new['maps']:
-            __download_map(url, path, m)
+        for new_map in maps_new['maps']:
+            __download_map(url, cache_path, new_map)
         return
     else:
-        for m in maps_new['maps']:
-            o = __find_map_by_file(maps_old, m['file'])
-            if o is None or o['version'] < m['version'] or o['size'] != m['size']:
-                __download_map(url, path, m)
+        for new_map in maps_new['maps']:
+            old_map = __find_map_by_file(maps_old, new_map['file'])
+            if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
+                __download_map(url, cache_path, new_map)
 
-    __store_map_index_version(maps_new, os.path.join(path, "version.json"))
-    __store_map_index_country_iso_codes(maps_new, os.path.join(path, "iso.json"))
+        for old_map in maps_old['maps']:
+            new_map = __find_map_by_file(maps_new, old_map['file'])
+            if new_map is None:
+                __remove_map(cache_path, old_map)
+
+    __store_map_index_version(maps_new, os.path.join(cache_path, "version.json"))
+    __store_map_index_country_iso_codes(maps_new, os.path.join(cache_path, "iso.json"))
     store_map_index(maps_new, maps_index_path)
     return None
 
 
 def update_publication(cache_path, publication_path):
+    if not os.path.isdir(publication_path):
+        os.mkdir(publication_path)
+
+    cached_maps = load_map_index(os.path.join(cache_path, 'index.json'))
+    try:
+        publiched_maps = load_map_index(os.path.join(publication_path, 'index.json'))
+    except IOError:
+        publiched_maps = None
+
+
+
+
 
     return None
 

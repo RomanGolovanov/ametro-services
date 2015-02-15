@@ -6,7 +6,7 @@ import pmetro
 cache_path = 'cache'
 publication_path = 'www'
 
-pmetro = 'http://pmetro.chpeks.com/'
+pmetro_url = 'http://pmetro.chpeks.com/'
 
-pmetro.refresh_cache(cache_path, pmetro)
+pmetro.refresh_cache(cache_path, pmetro_url)
 pmetro.update_publication(cache_path, publication_path)
