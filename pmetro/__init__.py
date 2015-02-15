@@ -182,12 +182,18 @@ def __create_map_info(map_path, map_obj):
     reader.section(u'Options')
 
     comments = []
+    description = []
     while reader.read():
-        if reader.name() == 'comment' or reader.name() == 'mapauthors':
+        if reader.name() == 'comment':
             comments.append(reader.value())
+        if reader.name() == 'mapauthors':
+            description.append(reader.value())
 
     if any(comments):
-        map_obj['comments'] = string.join(comments, '\n')
+        map_obj['comments'] = string.join(comments, '\n').rstrip('\n')
+
+    if any(description):
+        map_obj['description'] = string.join(description, '\n').rstrip('\n')
 
     return map_obj
 
