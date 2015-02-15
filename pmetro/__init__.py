@@ -14,7 +14,8 @@ def __load_geo_names():
     with codecs.open(os.path.join(os.path.dirname(__file__), 'cities.dict'), encoding='utf-8') as f:
         for l in f.readlines():
             parts = l.rstrip().split('\t')
-            if len(parts) <= 8: continue
+            if len(parts) <= 8:
+                continue
             names.append({
                 'id': parts[0],
                 'name': parts[1],
@@ -44,30 +45,34 @@ def __load_countries():
 
 def __find_geo_name(geo_names, name):
     for c in geo_names:
-        if name == c['name'] or name == c['ascii-name']: return c
+        if name == c['name'] or name == c['ascii-name']:
+            return c
 
     for c in geo_names:
         if name in c['search']:
             for p in c['search'].split(','):
-                if name == p: return c
+                if name == p:
+                    return c
 
     for c in geo_names:
-        if name in c['search']: return c
+        if name in c['search']:
+            return c
 
     return None
 
 
 def __find_country(countries, iso):
     for c in countries:
-        if iso == c['iso']: return c
+        if iso == c['iso']:
+            return c
     return None
 
 
-def __download_map_index(service_url):
+def __download_map_index(url):
     geo_names = __load_geo_names()
     countries = __load_countries()
 
-    xml_maps = urllib.urlopen(service_url + 'Files.xml').read().decode('windows-1251').encode('utf-8')
+    xml_maps = urllib.urlopen(url + 'Files.xml').read().decode('windows-1251').encode('utf-8')
     maps = []
     max_version = 0
     for el in ET.fromstring(xml_maps):
@@ -75,14 +80,12 @@ def __download_map_index(service_url):
             continue
 
         geo_name = __find_geo_name(geo_names, el.find('City').attrib['CityName'])
-
         if geo_name is None:
             continue
 
         version = int(el.find('Zip').attrib['Date'])
-        if version > max_version: max_version = version
-
-        #print geo_name['name'], geo_name['iso']
+        if version > max_version:
+            max_version = version
 
         maps.append({
             'id': geo_name['id'],
@@ -98,16 +101,16 @@ def __download_map_index(service_url):
     return {'version': max_version, 'maps': maps}
 
 
-def __download_map(service_url, folder, map):
-    req = urllib2.urlopen(service_url + map['file'])
+def __download_map(url, path, map_index):
+    req = urllib2.urlopen(url + map_index['file'])
     chunk_size = 16 * 1024
-    with open(os.path.join(folder, map['file'] + ".download"), 'wb') as fp:
+    with open(os.path.join(path, map_index['file'] + ".download"), 'wb') as fp:
         while True:
             chunk = req.read(chunk_size)
-            if not chunk: break
+            if not chunk:
+                break
             fp.write(chunk)
-    os.rename(os.path.join(folder, map['file'] + ".download"), os.path.join(folder, map['file']))
-    #print map['file'] + ' downloaded'
+    os.rename(os.path.join(path, map_index['file'] + ".download"), os.path.join(path, map_index['file']))
 
 
 def __find_map_by_file(maps, file_name):
@@ -123,10 +126,10 @@ def __store_map_index_version(map_index, path):
             json.dumps({'version': map_index['version']}, ensure_ascii=False, indent=True))
 
 
-def __store_map_index_country_iso_codes(maps, path):
+def __store_map_index_country_iso_codes(map_index, path):
     country_iso_dict = {}
 
-    for m in maps['maps']:
+    for m in map_index['maps']:
         country_name = m['country']
         country_iso = m['iso']
         country_iso_dict[country_name] = country_iso
@@ -147,12 +150,12 @@ def load_map_index(path):
         return json.load(f)
 
 
-def update_maps_cache(service_url, working_path):
-    if not os.path.isdir(working_path):
-        os.mkdir(working_path)
+def refresh_cache(path, url):
+    if not os.path.isdir(path):
+        os.mkdir(path)
 
-    maps_new = __download_map_index(service_url)
-    maps_index_path = os.path.join(working_path, "index.json")
+    maps_new = __download_map_index(url)
+    maps_index_path = os.path.join(path, "index.json")
 
     try:
         maps_old = load_map_index(maps_index_path)
@@ -161,15 +164,26 @@ def update_maps_cache(service_url, working_path):
 
     if maps_old is None:
         for m in maps_new['maps']:
-            __download_map(service_url, working_path, m)
+            __download_map(url, path, m)
         return
     else:
         for m in maps_new['maps']:
             o = __find_map_by_file(maps_old, m['file'])
-            if o is None or o['version'] < m['version'] or o['size'] <> m['size']:
-                __download_map(service_url, working_path, m)
+            if o is None or o['version'] < m['version'] or o['size'] != m['size']:
+                __download_map(url, path, m)
 
-    __store_map_index_version(maps_new, os.path.join(working_path, "version.json"))
-    __store_map_index_country_iso_codes(maps_new, os.path.join(working_path, "iso.json"))
+    __store_map_index_version(maps_new, os.path.join(path, "version.json"))
+    __store_map_index_country_iso_codes(maps_new, os.path.join(path, "iso.json"))
     store_map_index(maps_new, maps_index_path)
     return None
+
+
+def update_publication(cache_path, publication_path):
+
+    return None
+
+
+
+
+
+

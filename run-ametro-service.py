@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import pmetro
-import os
 
-working_folder = 'maps'
-if not os.path.isdir(working_folder):
-    os.mkdir(working_folder)
+cache_path = 'cache'
+publication_path = 'www'
 
-pmetro_url = 'http://pmetro.chpeks.com/'
+pmetro = 'http://pmetro.chpeks.com/'
 
-pmetro.update_maps_cache(pmetro_url, working_folder)
+pmetro.refresh_cache(cache_path, pmetro)
+pmetro.update_publication(cache_path, publication_path)
