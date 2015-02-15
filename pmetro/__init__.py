@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import codecs
-from collections import OrderedDict
 import shutil
 import string
 import urllib
@@ -12,79 +11,11 @@ import xml.etree.ElementTree as ET
 import json
 import os
 import zipfile
-from pmetro.inireader import inireader
-
-
-class MultiOrderedDict(OrderedDict):
-    def __setitem__(self, key, value):
-        if isinstance(value, list) and key in self:
-            self[key].extend(value)
-        else:
-            super(OrderedDict, self).__setitem__(key, value)
-
-
-def __load_geo_names():
-    names = []
-    with codecs.open(os.path.join(os.path.dirname(__file__), 'cities.dict'), encoding='utf-8') as f:
-        for l in f.readlines():
-            parts = l.rstrip().split('\t')
-            if len(parts) <= 8:
-                continue
-            names.append({
-                'id': parts[0],
-                'name': parts[1],
-                'ascii-name': parts[2],
-                'search': parts[3],
-                'latitude': parts[4],
-                'longitude': parts[5],
-                'iso': parts[8]
-            })
-    return names
-
-
-def __load_countries():
-    countries = []
-    with codecs.open(os.path.join(os.path.dirname(__file__), 'countries.dict'), encoding='utf-8') as f:
-        for l in f.readlines():
-            parts = l.rstrip().split(',')
-            countries.append({
-                'id': parts[0],
-                'iso': parts[1],
-                'abr': parts[2],
-                'en': parts[3],
-                'ru': parts[4]
-            })
-    return countries
-
-
-def __find_geo_name(geo_names, name):
-    for c in geo_names:
-        if name == c['name'] or name == c['ascii-name']:
-            return c
-
-    for c in geo_names:
-        if name in c['search']:
-            for p in c['search'].split(','):
-                if name == p:
-                    return c
-
-    for c in geo_names:
-        if name in c['search']:
-            return c
-
-    return None
-
-
-def __find_country(countries, iso):
-    for c in countries:
-        if iso == c['iso']:
-            return c
-    return None
-
+from geonames import GeoNamesProvider
+from inireader import IniReader
 
 def __download_map_index(url):
-    geo_names = __load_geo_names()
-    countries = __load_countries()
+    geonames = GeoNamesProvider()
 
     xml_maps = urllib.urlopen(url + 'Files.xml').read().decode('windows-1251').encode('utf-8')
     maps = []
@@ -93,8 +24,10 @@ def __download_map_index(url):
         if el.find('City').attrib['Country'] == u' Программа' or el.find('City').attrib['CityName'] == u'':
             continue
 
-        geo_name = __find_geo_name(geo_names, el.find('City').attrib['CityName'])
-        if geo_name is None:
+        city = geonames.find_city(el.find('City').attrib['CityName'], el.find('City').attrib['Country'])
+
+        if city is None:
+            print 'Skipped ' + el.find('City').attrib['Country'] + '/' + el.find('City').attrib['CityName']
             continue
 
         version = int(el.find('Zip').attrib['Date'])
@@ -102,15 +35,15 @@ def __download_map_index(url):
             max_version = version
 
         maps.append({
-            'id': geo_name['id'],
-            'city': geo_name['name'],
-            'iso': geo_name['iso'],
-            'country': __find_country(countries, geo_name['iso'])['en'],
-            'latitude': geo_name['latitude'],
-            'longitude': geo_name['longitude'],
+            'id': city.Uid,
+            'city': city.Name,
+            'iso': city.CountryIso,
+            'country': geonames.get_country_name_by_iso(city.CountryIso),
+            'latitude': city.Latitude,
+            'longitude': city.Longitude,
             'file': el.find('Zip').attrib['Name'],
-            'version': version,
-            'size': int(el.find('Zip').attrib['Size'])
+            'size': int(el.find('Zip').attrib['Size']),
+            'version': version
         })
     return {'version': max_version, 'maps': maps}
 
@@ -124,11 +57,16 @@ def __download_map(url, path, map_item):
             if not chunk:
                 break
             fp.write(chunk)
+    map_file = os.path.join(path, map_item['file'])
+    if os.path.isfile(map_file):
+        os.remove(map_file)
     os.rename(os.path.join(path, map_item['file'] + '.download'), os.path.join(path, map_item['file']))
+    print 'Downloaded ' + map_item['file']
 
 
 def __remove_map(path, map_item):
-    os.rename(os.path.join(path, map_item['file']), os.path.join(path, map_item['file'] + '.removed'))
+    exit(0)
+    os.remove(os.path.join(path, map_item['file']))
 
 
 def __find_map_by_file(maps, file_name):
@@ -177,7 +115,7 @@ def __find_file_by_extension(path, file_ext):
 
 
 def __create_map_info(map_path, map_obj):
-    reader = inireader()
+    reader = IniReader()
     reader.open(__find_file_by_extension(map_path, '.cty'), 'windows-1251')
     reader.section(u'Options')
 
@@ -185,9 +123,9 @@ def __create_map_info(map_path, map_obj):
     description = []
     while reader.read():
         if reader.name() == 'comment':
-            comments.append(reader.value().replace('\\n','\n').rstrip())
+            comments.append(reader.value().replace('\\n', '\n').rstrip())
         if reader.name() == 'mapauthors':
-            description.append(reader.value().replace('\\n','\n').rstrip())
+            description.append(reader.value().replace('\\n', '\n').rstrip())
 
     if any(comments):
         map_obj['comments'] = string.join(comments, '\n').rstrip('\n')
