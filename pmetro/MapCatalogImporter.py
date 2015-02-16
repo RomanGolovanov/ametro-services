@@ -203,37 +203,53 @@ class MapPublication(object):
         cached_catalog = MapCatalog()
         cached_catalog.load(os.path.join(cache_path, 'index.json'))
 
+        old_catalog = MapCatalog()
+
+        # noinspection PyBroadException
+        try:
+            old_catalog.load(self.publication_index_path)
+        except:
+            old_catalog = MapCatalog()
+
         published_catalog = MapCatalog()
         for cached_map in cached_catalog.maps:
             map_info = published_catalog.clone(cached_map)
             map_file = map_info['file']
-            publication_map_path = os.path.join(self.publication_path, map_file)
 
-            temp_folder = os.path.join(self.temp_path, uuid.uuid1().hex)
-            try:
-                unzip_file(os.path.join(cache_path, map_file), temp_folder)
+            old_map = old_catalog.find_by_file(map_file)
+            if old_map is not None and old_map['version'] == map_info['version']:
+                published_catalog.add_map(old_map)
+                continue
 
-                pmz_file = find_file_by_extension(temp_folder, '.pmz')
-                map_folder = pmz_file[0:-4]
-                unzip_file(pmz_file, map_folder)
-
-                self.__fill_map_info(map_folder, map_info)
-                self.__convert_assets()
-
-                zip_folder(map_folder, publication_map_path)
-                map_info['size'] = os.path.getsize(publication_map_path)
-
-                published_catalog.add_map(map_info)
-                print 'Map [%s] imported.' % (map_file)
-            except:
-                print "Unexpected error:", sys.exc_info()
-                raise
-            finally:
-                shutil.rmtree(temp_folder)
+            self.__import_map(cache_path, map_file, map_info)
+            published_catalog.add_map(map_info)
+            print 'Map [%s] imported.' % map_file
 
         published_catalog.save(self.publication_index_path)
         published_catalog.save_version(self.publication_version_path)
         published_catalog.save_countries(self.publication_countries_path)
+
+    def __import_map(self, cache_path, map_file, map_info):
+        publication_map_path = os.path.join(self.publication_path, map_file)
+        temp_folder = os.path.join(self.temp_path, uuid.uuid1().hex)
+        try:
+            unzip_file(os.path.join(cache_path, map_file), temp_folder)
+
+            pmz_file = find_file_by_extension(temp_folder, '.pmz')
+            map_folder = pmz_file[0:-4]
+            unzip_file(pmz_file, map_folder)
+
+            self.__fill_map_info(map_folder, map_info)
+            self.__convert_assets()
+
+            zip_folder(map_folder, publication_map_path)
+            map_info['size'] = os.path.getsize(publication_map_path)
+
+        except:
+            print "Unexpected error:", sys.exc_info()
+            raise
+        finally:
+            shutil.rmtree(temp_folder)
 
     @staticmethod
     def __fill_map_info(map_folder, map_info):
