@@ -8,7 +8,7 @@ class IniReader(object):
         self.position = None
 
     def open(self, path, encoding):
-        f = codecs.open(path, "r", encoding = encoding)
+        f = codecs.open(path, "r", encoding=encoding)
         self.lines = f.readlines()
         self.position = 0
 
