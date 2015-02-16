@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import os
-import pmetro
+
+from pmetro.MapCatalogImporter import MapCache, MapPublication
 
 base_dir = ''
 
@@ -11,5 +12,9 @@ temp_path = os.path.join(base_dir, 'tmp')
 
 pmetro_url = 'http://pmetro.chpeks.com/'
 
-pmetro.refresh_cache(cache_path, pmetro_url)
-pmetro.update_publication(cache_path, publication_path, temp_path)
+cache = MapCache(pmetro_url, cache_path)
+cache.refresh()
+
+publication = MapPublication(publication_path, temp_path)
+publication.import_maps(cache_path)
+

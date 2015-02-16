@@ -1,10 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 import codecs
 import os
 
 
-class GeoCity:
+class GeoCity(object):
     def __init__(self, uid, name, ascii_name, search, latitude, longitude, country_iso):
         self.Uid = uid
         self.Name = name
@@ -15,7 +14,7 @@ class GeoCity:
         self.CountryIso = country_iso
 
 
-class GeoCountry:
+class GeoCountry(object):
     def __init__(self, uid, name, iso, search):
         self.Uid = uid
         self.Name = name
@@ -23,7 +22,7 @@ class GeoCountry:
         self.Search = search
 
 
-class GeoNamesProvider:
+class GeoNamesProvider(object):
     def __init__(self):
         self.citiesByCountry = {}
         self.cities = []
@@ -31,6 +30,21 @@ class GeoNamesProvider:
         self.__load_cities()
         self.__load_countries()
 
+    def get_country_name_by_iso(self, iso):
+        for c in self.countries:
+            if iso == c.CountryIso:
+                return c.Name
+        return None
+
+    def find_city(self, name, country_name):
+
+        country = self.__find_country_by_name(country_name)
+        if country is not None:
+            c = self.__find_geo_name_in_country(self.citiesByCountry[country.CountryIso], name)
+            if c is not None:
+                return c
+
+        return self.__find_geo_name_in_country(self.cities, name)
 
     def __load_cities(self):
         cities_by_country = {}
@@ -63,7 +77,6 @@ class GeoNamesProvider:
                 countries.append(GeoCountry(long(p[0]), p[3], p[1], p[4]))
         self.countries = countries
 
-
     def __find_country_by_name(self, name):
         lowercase_name = name.lower()
         for c in self.countries:
@@ -71,15 +84,8 @@ class GeoNamesProvider:
                 return c
         return None
 
-
-    def get_country_name_by_iso(self, iso):
-        for c in self.countries:
-            if iso == c.CountryIso:
-                return c.Name
-        return None
-
     @staticmethod
-    def __find_geo_name_country(cities, name):
+    def __find_geo_name_in_country(cities, name):
         lowercase_name = name.lower()
         for c in cities:
             if lowercase_name == c.Name.lower() or lowercase_name == c.AsciiName:
@@ -97,13 +103,3 @@ class GeoNamesProvider:
 
         return None
 
-
-    def find_city(self, name, country_name):
-
-        country = self.__find_country_by_name(country_name)
-        if country is not None:
-            c = self.__find_geo_name_country(self.citiesByCountry[country.CountryIso], name)
-            if c is not None:
-                return c
-
-        return self.__find_geo_name_country(self.cities, name)

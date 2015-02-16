@@ -1,10 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 import codecs
 
 
-class IniReader:
+class IniReader(object):
     def __init__(self):
         self.lines = []
         self.position = None
