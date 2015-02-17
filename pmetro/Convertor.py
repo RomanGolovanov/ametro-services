@@ -23,7 +23,7 @@ def convert_vec_to_svg(vec_file, svg_file):
         'line': __vec_cmd_line,
         'spline': __vec_cmd_line,
         'polygon': __vec_cmd_polygon,
-        'angletextout': __vec_cmd_angletextout
+        'angletextout': __vec_cmd_angle_text_out
     }
     unknown = []
 
@@ -46,25 +46,19 @@ def convert_vec_to_svg(vec_file, svg_file):
     print "Complete. Unknown commands: %s" % unknown
 
 
-def __vec_cmd_angletextout(dwg=svgwrite.Drawing(), text='', style={}):
-    print text
-    p = __as_list(text)
+def __vec_cmd_angle_text_out(dwg=svgwrite.Drawing(), text='', style={}):
+    p = __as_list(text.strip('\''))
     angle = int(p[0])
     font_style = p[1]
     font_size = p[2]
     x = int(p[3])
     y = int(p[4])
-    position=(x,y)
-    r = 'rotate(%s %s,%s) translate(0 %s)' % (-angle,x,y,font_size)
+    pos=(x,y)
+    rotate_and_shift = 'rotate(%s %s,%s) translate(0 %s)' % (-angle,x,y,font_size)
     txt = string.join(p[5:], ' ')
 
-    dwg.add(dwg.text(text=txt,
-                     insert=position,
-                     font_family=font_style,
-                     font_size=font_size,
-                     fill=style['pen'],
-                     transform=r,
-                     opacity=style['opaque']))
+    dwg.add(dwg.text(text=txt, insert=pos, font_family=font_style, font_size=font_size,
+                     fill=style['pen'], transform=rotate_and_shift, opacity=style['opaque']))
     return dwg
 
 
