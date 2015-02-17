@@ -7,6 +7,7 @@ import svgwrite
 from pmetro.ConvertorHelpers import as_list, as_point_list_with_width, as_rgb, as_point_list
 
 from pmetro.Math2D import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate
+from pmetro.Splines import convert_spline_to_points
 
 UNKNOWN_COMMANDS = []
 
@@ -44,7 +45,7 @@ def convert_vec_to_svg(vec_file, svg_file):
         'brush': 'none',
         'pen': 'none',
         'opaque': 100,
-        'size': (0,0),
+        'size': (0, 0),
         'angle': 0
     }
 
@@ -57,18 +58,13 @@ def convert_vec_to_svg(vec_file, svg_file):
         'brushcolor': __vec_cmd_brush_color,
         'opaque': __vec_cmd_opaque,
         'line': __vec_cmd_line,
-        'spline': __vec_cmd_line,
+        'spline': __vec_cmd_spline,
         'polygon': __vec_cmd_polygon,
         'angletextout': __vec_cmd_angle_text_out,
         'stairs': __vec_cmd_stairs,
-        'arrow': __vec_cmd_arrow
-        # dashed
-        # image
-        # railway
-        # ellipse
-        # textout
-        # spotrect
-        # spotcircle
+        'arrow': __vec_cmd_arrow,
+        'dashed': __vec_cmd_line_dashed
+        # 'image,' 'railway', 'ellipse', 'textout', 'spotrect', 'spotcircle
     }
 
     dwg = __vec_create_drawing(lines[0], style)
@@ -77,6 +73,7 @@ def convert_vec_to_svg(vec_file, svg_file):
     for l in lines[1:]:
         line = str(l).strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
+            style['pen'] = 'black'
             continue
 
         space_index = line.index(' ')
@@ -153,6 +150,28 @@ def __vec_cmd_line(dwg, root, text, style):
     root.add(dwg.polyline(points=pts,
                           stroke=style['pen'],
                           stroke_width=width,
+                          fill='none',
+                          opacity=style['opaque']))
+
+
+
+
+def __vec_cmd_spline(dwg, root, text, style):
+    pts, width = as_point_list_with_width(text)
+    c = convert_spline_to_points(pts)
+    root.add(dwg.polyline(points=c,
+                          stroke=style['pen'],
+                          stroke_width=width,
+                          fill='none',
+                          opacity=style['opaque']))
+
+
+def __vec_cmd_line_dashed(dwg, root, text, style):
+    pts, width = as_point_list_with_width(text)
+    root.add(dwg.polyline(points=pts,
+                          stroke=style['pen'],
+                          stroke_width=width,
+                          stroke_dasharray='5,5',
                           fill='none',
                           opacity=style['opaque']))
 
