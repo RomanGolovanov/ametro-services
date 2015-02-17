@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import os
-from pmetro.Convertor import convert_vec_to_svg
+from pmetro.Convertor import convert_vec_to_svg, convert_files_in_folder
 
 from pmetro.MapCatalogImporter import MapCache, MapPublication
 
@@ -19,5 +19,6 @@ pmetro_url = 'http://pmetro.chpeks.com/'
 #publication = MapPublication(publication_path, temp_path)
 #publication.import_maps(cache_path)
 
-convert_vec_to_svg('Borovitskaya.vec','Borovitskaya.svg')
+#convert_vec_to_svg('Belorusskaya.vec','Belorusskaya.svg')
 
+convert_files_in_folder('MoscowMap', 'MoscowMap.converted')

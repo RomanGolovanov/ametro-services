@@ -1,23 +1,58 @@
 # -*- coding: utf-8 -*-
-
+import os
+import shutil
 import string
-import math
 
 import svgwrite
+from pmetro.ConvertorHelpers import as_list, as_point_list_with_width, as_rgb, as_point_list
+
+from pmetro.Math2D import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate
+
+UNKNOWN_COMMANDS = []
+
+
+def convert_files_in_folder(src_path, dst_path):
+    if not os.path.isdir(dst_path):
+        os.mkdir(dst_path)
+
+    converters = {
+        'vec': (convert_vec_to_svg, 'svg')
+    }
+
+    for src_name in os.listdir(src_path):
+        src_file_path = os.path.join(src_path, src_name)
+        if not (os.path.isfile(src_file_path)):
+            continue
+
+        src_file_ext = src_file_path[-3:]
+        if src_file_ext in converters:
+            dst_file_path = os.path.join(dst_path, src_name[:-3] + converters[src_file_ext][1])
+            print "Converting %s into %s" % (src_file_path, dst_file_path)
+            converters[src_file_ext][0](src_file_path, dst_file_path)
+        else:
+            dst_file_path = os.path.join(dst_path, src_name)
+            print 'Copy %s into %s' % (src_file_path, dst_file_path)
+            shutil.copy(src_file_path, dst_file_path)
+
+    print 'Unknown commands: %s' % UNKNOWN_COMMANDS
 
 
 def convert_vec_to_svg(vec_file, svg_file):
     lines = open(vec_file, 'r').read().decode('windows-1251').encode('utf-8').split('\n')
 
-    dwg = svgwrite.Drawing()
-
     style = {
-        'brush': 0,
-        'pen': 0,
+        'brush': 'none',
+        'pen': 'none',
         'opaque': 100,
+        'size': (0,0),
+        'angle': 0
     }
+
+    container_commands = {
+        'angle': __vec_cmd_angle,
+    }
+
     commands = {
-        'size': __vec_cmd_size,
         'pencolor': __vec_cmd_pen_color,
         'brushcolor': __vec_cmd_brush_color,
         'opaque': __vec_cmd_opaque,
@@ -25,153 +60,154 @@ def convert_vec_to_svg(vec_file, svg_file):
         'spline': __vec_cmd_line,
         'polygon': __vec_cmd_polygon,
         'angletextout': __vec_cmd_angle_text_out,
-        'stairs': __vec_cmd_stairs
+        'stairs': __vec_cmd_stairs,
+        'arrow': __vec_cmd_arrow
+        # dashed
+        # image
+        # railway
+        # ellipse
+        # textout
+        # spotrect
+        # spotcircle
     }
-    unknown = []
 
-    for l in lines:
+    dwg = __vec_create_drawing(lines[0], style)
+    root = dwg
+
+    for l in lines[1:]:
         line = str(l).strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
             continue
 
         space_index = line.index(' ')
-
         cmd = line[:space_index].lower().strip()
-        if not (cmd in commands):
-            if cmd not in unknown:
-                unknown.append(cmd)
+        txt = line[space_index:].strip()
+
+        if cmd not in commands and cmd not in container_commands:
+            if cmd not in UNKNOWN_COMMANDS:
+                UNKNOWN_COMMANDS.append(cmd)
             continue
 
-        dwg = commands[cmd](dwg, line[space_index:].strip(), style)
+        if cmd in container_commands:
+            root = container_commands[cmd](dwg, root, txt, style)
+        else:
+            commands[cmd](dwg, root, txt, style)
 
     dwg.saveas(svg_file)
-    print "Complete. Unknown commands: %s" % unknown
 
 
-def __vec_cmd_angle_text_out(dwg=svgwrite.Drawing(), text='', style={}):
-    p = __as_list(text.strip('\''))
+def __vec_create_drawing(text, style):
+    w, h = as_list(text[text.index(' '):].strip(), 'x')
+    style['size'] = (int(w), int(h))
+    return svgwrite.Drawing(size=(w + 'px', h + 'px'), profile='tiny')
+
+
+def __vec_cmd_angle(dwg, root, text, style):
+    angle = float(text)
+    current_angle = style['angle']
+    style['angle'] = angle
+    w, h = style['size']
+    rotate = 'rotate(%s,%s,%s)' % (current_angle - angle, w / 2, h / 2)
+    new_root = dwg.g(transform=rotate)
+    root.add(new_root)
+    return new_root
+
+
+def __vec_cmd_angle_text_out(dwg, root, text, style):
+    p = as_list(text.strip('\''))
     angle = int(p[0])
     font_style = p[1]
     font_size = p[2]
+    font_weight = 'normal'
     x = int(p[3])
     y = int(p[4])
     pos = (x, y)
     rotate_and_shift = 'rotate(%s %s,%s) translate(0 %s)' % (-angle, x, y, font_size)
     txt = string.join(p[5:], ' ')
+    if txt.endswith(' 1'):
+        txt = txt[:-2]
+        font_weight = 'bold'
+    txt = txt.strip('\'')
 
-    dwg.add(dwg.text(text=txt, insert=pos, font_family=font_style, font_size=font_size,
-                     fill=style['pen'], transform=rotate_and_shift, opacity=style['opaque']))
-    return dwg
+    root.add(dwg.text(text=txt,
+                      insert=pos,
+                      font_family=font_style,
+                      font_size=font_size,
+                      font_weight=font_weight,
+                      transform=rotate_and_shift,
+                      fill=style['pen'],
+                      opacity=style['opaque']))
 
 
-def __vec_cmd_polygon(dwg=svgwrite.Drawing(), text='', style={}):
-    pts, width = __as_point_list_with_width(text)
-    dwg.add(dwg.polygon(points=pts,
-                        stroke=style['pen'],
-                        stroke_width=width,
-                        fill=style['brush'],
-                        opacity=style['opaque']))
-    return dwg
-
-
-def __vec_cmd_line(dwg=svgwrite.Drawing(), text='', style={}):
-    pts, width = __as_point_list_with_width(text)
-    dwg.add(dwg.polyline(points=pts,
+def __vec_cmd_polygon(dwg, root, text, style):
+    pts, width = as_point_list_with_width(text)
+    root.add(dwg.polygon(points=pts,
                          stroke=style['pen'],
                          stroke_width=width,
-                         fill='none',
+                         fill=style['brush'],
                          opacity=style['opaque']))
-    return dwg
 
 
-def __vec_cmd_opaque(dwg=svgwrite.Drawing(), text='', style={}):
+def __vec_cmd_line(dwg, root, text, style):
+    pts, width = as_point_list_with_width(text)
+    root.add(dwg.polyline(points=pts,
+                          stroke=style['pen'],
+                          stroke_width=width,
+                          fill='none',
+                          opacity=style['opaque']))
+
+
+def __vec_cmd_opaque(dwg, root, text, style):
     style['opaque'] = float(text) / 100
-    return dwg
 
 
-def __vec_cmd_brush_color(dwg=svgwrite.Drawing(), text='', style={}):
-    style['brush'] = __as_rgb(text)
-    return dwg
+def __vec_cmd_brush_color(dwg, root, text, style):
+    style['brush'] = as_rgb(text)
 
 
-def __vec_cmd_pen_color(dwg=svgwrite.Drawing(), text='', style={}):
-    style['pen'] = __as_rgb(text)
-    return dwg
+def __vec_cmd_pen_color(dwg, root, text, style):
+    style['pen'] = as_rgb(text)
 
 
-def __vec_cmd_size(dwg=svgwrite.Drawing(), text='', style={}):
-    w, h = __as_list(text, 'x')
-    return svgwrite.Drawing(size=(w + 'px', h + 'px'), profile='tiny')
+def __vec_cmd_stairs(dwg, root, text, style):
+    start, end, target = as_point_list(text)
+
+    step_length = 4
+    path_vec = vector_sub(target, start)
+    step_vec = vector_mul_s(path_vec, step_length / vector_mod(path_vec))
+    step_count = int(vector_mod(path_vec)) / step_length + 1
+
+    for it in range(0, step_count):
+        root.add(dwg.polyline(points=(start, end),
+                              stroke=style['pen'],
+                              stroke_width=1,
+                              fill='none',
+                              opacity=style['opaque']))
+
+        start = vector_add(start, step_vec)
+        end = vector_add(end, step_vec)
 
 
-def __as_point_list_with_width(text):
-    p = __as_list(text)
-    pts = []
-    for x in range(0, len(p) / 2):
-        pts.append((p[x * 2], p[x * 2 + 1]))
-    if len(p) % 2 == 0:
-        width = 1
-    else:
-        width = p[len(p) - 1]
-    return pts, width
+def __vec_cmd_arrow(dwg, root, text, style):
+    pts, width = as_point_list_with_width(text)
+    root.add(dwg.polyline(points=pts,
+                          stroke=style['pen'],
+                          stroke_width=width,
+                          fill='none',
+                          opacity=style['opaque']))
 
+    start = pts[len(pts) - 2]
+    end = pts[len(pts) - 1]
 
-def __as_point_list(text=''):
-    p = __as_list(text)
-    for x in range(0, len(p) / 2):
-        yield (float(p[x * 2]), float(p[x * 2 + 1]))
+    angle = 20
+    v = vector_mul_s(vector_sub(start, end), 0.3)
 
+    left_side = vector_add(vector_rotate(v, angle), end)
+    right_side = vector_add(vector_rotate(v, -angle), end)
 
-def __as_list(text='', splitter=','):
-    parts = text.split(splitter)
-    lst = []
-    for p in parts:
-        lst.append(p.strip())
-    return lst
+    root.add(dwg.polygon(points=[right_side, end, left_side],
+                         stroke=style['pen'],
+                         stroke_width=width,
+                         fill=style['pen'],
+                         opacity=style['opaque']))
 
-
-def __as_rgb(text=''):
-    if text == '-1':
-        return 'none'
-    return 'rgb(%s,%s,%s)' % (int('0x' + text[:2], 0), int('0x' + text[2:4], 0), int('0x' + text[4:], 0))
-
-
-def __vec_cmd_stairs(dwg=svgwrite.Drawing(), text='', style={}):
-    start, end, target = __as_point_list(text)
-
-    v = __as_vector(start, target)
-    shift = __vector_mul(v, 1.0 / __vector_len(v) * 10.0)
-
-    for it in range(0, 10):
-        dwg.add(dwg.polyline(points=(start, end),
-                             stroke=style['pen'],
-                             stroke_width=1,
-                             fill='none',
-                             opacity=style['opaque']))
-
-        start = __vector_add(start, shift)
-        end = __vector_add(end, shift)
-
-    return dwg
-
-
-def __vector_len(vec):
-    x, y = vec
-    return math.sqrt(x * x + y * y)
-
-
-def __as_vector(start, end):
-    x0, y0 = start
-    x1, y1 = end
-    return x1 - x0, y1 - y0
-
-
-def __vector_mul(vec, d):
-    x, y = vec
-    return x * d, y * d
-
-
-def __vector_add(vec, dv):
-    x, y = vec
-    dx,dy = dv
-    return x + dx, y + dy
