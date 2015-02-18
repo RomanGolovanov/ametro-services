@@ -7,7 +7,7 @@ import svgwrite
 from pmetro.ConvertorHelpers import as_list, as_point_list_with_width, as_rgb, as_point_list
 
 from pmetro.Math2D import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate
-from pmetro.Splines import convert_spline_to_points
+from pmetro.Splines import cubic_interpolate
 
 UNKNOWN_COMMANDS = []
 
@@ -158,7 +158,7 @@ def __vec_cmd_line(dwg, root, text, style):
 
 def __vec_cmd_spline(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
-    c = convert_spline_to_points(pts)
+    c = cubic_interpolate(pts) # cubic_interpolate(cubic_interpolate(cubic_interpolate(pts)))
     root.add(dwg.polyline(points=c,
                           stroke=style['pen'],
                           stroke_width=width,
