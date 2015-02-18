@@ -1,41 +1,12 @@
 # -*- coding: utf-8 -*-
-import os
-import shutil
 import string
 
 import svgwrite
-from pmetro.ConvertorHelpers import as_list, as_point_list_with_width, as_rgb, as_point_list
 
-from pmetro.Math2D import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate
-from pmetro.Splines import cubic_interpolate
+from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list
+from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate
 
 UNKNOWN_COMMANDS = []
-
-
-def convert_files_in_folder(src_path, dst_path):
-    if not os.path.isdir(dst_path):
-        os.mkdir(dst_path)
-
-    converters = {
-        'vec': (convert_vec_to_svg, 'svg')
-    }
-
-    for src_name in os.listdir(src_path):
-        src_file_path = os.path.join(src_path, src_name)
-        if not (os.path.isfile(src_file_path)):
-            continue
-
-        src_file_ext = src_file_path[-3:]
-        if src_file_ext in converters:
-            dst_file_path = os.path.join(dst_path, src_name[:-3] + converters[src_file_ext][1])
-            print "Converting %s into %s" % (src_file_path, dst_file_path)
-            converters[src_file_ext][0](src_file_path, dst_file_path)
-        else:
-            dst_file_path = os.path.join(dst_path, src_name)
-            print 'Copy %s into %s' % (src_file_path, dst_file_path)
-            shutil.copy(src_file_path, dst_file_path)
-
-    print 'Unknown commands: %s' % UNKNOWN_COMMANDS
 
 
 def convert_vec_to_svg(vec_file, svg_file):
@@ -154,11 +125,9 @@ def __vec_cmd_line(dwg, root, text, style):
                           opacity=style['opaque']))
 
 
-
-
 def __vec_cmd_spline(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
-    c = cubic_interpolate(pts) # cubic_interpolate(cubic_interpolate(cubic_interpolate(pts)))
+    c = cubic_interpolate(pts)  # cubic_interpolate(cubic_interpolate(cubic_interpolate(pts)))
     root.add(dwg.polyline(points=c,
                           stroke=style['pen'],
                           stroke_width=width,

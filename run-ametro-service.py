@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
-from pmetro.Convertor import convert_vec_to_svg, convert_files_in_folder, UNKNOWN_COMMANDS
 
-from pmetro.MapCatalogImporter import MapCache, MapPublication
+import os
+from pmetro.map import convert_vec_to_svg, convert_map
+from pmetro.catalog import MapCache, MapPublication
+from pmetro.vec2svg import UNKNOWN_COMMANDS
 
 base_dir = ''
 
@@ -19,9 +20,13 @@ pmetro_url = 'http://pmetro.chpeks.com/'
 #publication = MapPublication(publication_path, temp_path)
 #publication.import_maps(cache_path)
 
-#convert_vec_to_svg('Belorusskaya.vec','Belorusskaya.svg')
+
+#convert_vec_to_svg('Borovitskaya.vec','Borovitskaya.svg')
 #convert_vec_to_svg('Aeroport.vec','Aeroport.svg')
 #convert_vec_to_svg('Tretyakovskaya.vec','Tretyakovskaya.svg')
-#print 'Unknown commands: %s' % UNKNOWN_COMMANDS
 
-convert_files_in_folder('MoscowMap', 'MoscowMap.converted')
+print 'Unknown commands: %s' % UNKNOWN_COMMANDS
+
+convert_map('MoscowMap', 'MoscowMap.converted')
+
+print 'Unknown commands: %s' % UNKNOWN_COMMANDS

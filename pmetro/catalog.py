@@ -10,8 +10,8 @@ import uuid
 import sys
 from globalization.GeoNames import GeoNamesProvider
 import xml.etree.ElementTree as ET
-from pmetro.FileUtils import unzip_file, zip_folder, find_file_by_extension
-from pmetro.IniReader import IniReader
+from pmetro.files import unzip_file, zip_folder, find_file_by_extension
+from pmetro.readers import IniReader
 
 
 class MapCatalog(object):
