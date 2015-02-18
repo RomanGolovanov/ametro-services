@@ -3,6 +3,7 @@ import string
 
 import svgwrite
 
+from pmetro.files import read_all_lines
 from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list
 from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate
 
@@ -10,8 +11,6 @@ UNKNOWN_COMMANDS = []
 
 
 def convert_vec_to_svg(vec_file, svg_file):
-    lines = open(vec_file, 'r').read().decode('windows-1251').encode('utf-8').split('\n')
-
     style = {
         'brush': 'none',
         'pen': 'none',
@@ -38,11 +37,11 @@ def convert_vec_to_svg(vec_file, svg_file):
         # 'image,' 'railway', 'ellipse', 'textout', 'spotrect', 'spotcircle
     }
 
+    lines = read_all_lines(vec_file)
     dwg = __vec_create_drawing(lines[0], style)
     root = dwg
-
     for l in lines[1:]:
-        line = str(l).strip()
+        line = unicode(l).strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
             style['pen'] = 'black'
             continue
@@ -65,7 +64,10 @@ def convert_vec_to_svg(vec_file, svg_file):
 
 
 def __vec_create_drawing(text, style):
-    w, h = as_list(text[text.index(' '):].strip(), 'x')
+    if text.startswith('Size'):
+        w, h = as_list(text[text.index(' '):].strip(), 'x')
+    else:
+        w, h = ('1000', '1000')
     style['size'] = (int(w), int(h))
     return svgwrite.Drawing(size=(w + 'px', h + 'px'), profile='tiny')
 
@@ -83,12 +85,12 @@ def __vec_cmd_angle(dwg, root, text, style):
 
 def __vec_cmd_angle_text_out(dwg, root, text, style):
     p = as_list(text.strip('\''))
-    angle = int(p[0])
+    angle = float(p[0])
     font_style = p[1]
     font_size = p[2]
     font_weight = 'normal'
-    x = int(p[3])
-    y = int(p[4])
+    x = float(p[3])
+    y = float(p[4])
     pos = (x, y)
     rotate_and_shift = 'rotate(%s %s,%s) translate(0 %s)' % (-angle, x, y, font_size)
     txt = string.join(p[5:], ' ')
@@ -127,7 +129,7 @@ def __vec_cmd_line(dwg, root, text, style):
 
 def __vec_cmd_spline(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
-    c = cubic_interpolate(pts)  # cubic_interpolate(cubic_interpolate(cubic_interpolate(pts)))
+    c = cubic_interpolate(pts)
     root.add(dwg.polyline(points=c,
                           stroke=style['pen'],
                           stroke_width=width,

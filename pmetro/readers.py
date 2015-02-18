@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import codecs
+
+from pmetro.files import read_all_lines
 
 
 class IniReader(object):
@@ -7,16 +8,15 @@ class IniReader(object):
         self.lines = []
         self.position = None
 
-    def open(self, path, encoding):
-        f = codecs.open(path, "r", encoding=encoding)
-        self.lines = f.readlines()
+    def open(self, path):
+        self.lines = read_all_lines(path)
         self.position = 0
 
     def section(self, section):
-        index = 0;
+        index = 0
         pattern = u'[' + section + u']'
         while index < len(self.lines):
-            if str(self.lines[index]).strip().lower() == str(pattern).lower():
+            if self.lines[index].strip().lower() == pattern.lower():
                 self.position = index
                 return
             index += 1

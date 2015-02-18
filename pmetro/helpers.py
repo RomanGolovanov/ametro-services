@@ -35,9 +35,15 @@ def as_list(text='', splitter=','):
 def as_rgb(text=''):
     if text == '0':
         return '#000'
-    if text == '-1':
-        return 'none'
+    if text == '00':
+        return '#000'
+    if text == '-1' or text == 'afyh22':
+        return '#AF2'
     if text == '':
         return 'none'
+    if len(text) > 6:
+        text = text[:6]
+    if len(text) == 6 and text[0] == text[1] and text[2] == text[3] and text[4] == text[5]:
+        return '#' + text[0] + text[2] + text[4]
     return '#' + text
 

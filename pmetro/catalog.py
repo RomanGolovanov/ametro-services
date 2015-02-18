@@ -8,9 +8,11 @@ import urllib
 import urllib2
 import uuid
 import sys
-from globalization.GeoNames import GeoNamesProvider
 import xml.etree.ElementTree as ET
+
+from globalization.GeoNames import GeoNamesProvider
 from pmetro.files import unzip_file, zip_folder, find_file_by_extension
+from pmetro.map import convert_map
 from pmetro.readers import IniReader
 
 
@@ -20,7 +22,7 @@ class MapCatalog(object):
             maps = []
         self.maps = maps
 
-    def add(self, uid, city, country, iso, latitude, longitude, file, size, version):
+    def add(self, uid, city, country, iso, latitude, longitude, file_name, size, version):
         self.maps.append({
             'id': uid,
             'city': city,
@@ -28,7 +30,7 @@ class MapCatalog(object):
             'country': country,
             'latitude': latitude,
             'longitude': longitude,
-            'file': file,
+            'file': file_name,
             'size': size,
             'version': version
         })
@@ -52,7 +54,6 @@ class MapCatalog(object):
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
                 json.dumps(country_iso_dict, ensure_ascii=False, indent=True))
-
 
     def load(self, path):
         with codecs.open(path, 'r', 'utf-8') as f:
@@ -187,6 +188,14 @@ class MapCache(object):
 class MapPublication(object):
     def __init__(self, publication_path, temp_path):
 
+        self.ignore_list = [
+            'Moscow3d.zip',
+            'MoscowGrd.zip',
+            'Moscow_skor.zip',
+            'Moscow_pix.zip',
+            'MoscowHistory.zip'
+        ]
+
         self.temp_path = temp_path
         if not os.path.isdir(temp_path):
             os.mkdir(temp_path)
@@ -216,14 +225,23 @@ class MapPublication(object):
             map_info = published_catalog.clone(cached_map)
             map_file = map_info['file']
 
+            if map_file in self.ignore_list:
+                print 'Map [%s] ignored.' % map_file
+                continue
+
             old_map = old_catalog.find_by_file(map_file)
             if old_map is not None and old_map['version'] == map_info['version']:
                 published_catalog.add_map(old_map)
+                print 'Map [%s] already published.' % map_file
                 continue
 
-            self.__import_map(cache_path, map_file, map_info)
-            published_catalog.add_map(map_info)
-            print 'Map [%s] imported.' % map_file
+            # noinspection PyBroadException
+            try:
+                self.__import_map(cache_path, map_file, map_info)
+                published_catalog.add_map(map_info)
+                print 'Map [%s] imported.' % map_file
+            except:
+                print 'Map [%s] import skipped due error %s.' % (map_file, sys.exc_info())
 
         published_catalog.save(self.publication_index_path)
         published_catalog.save_version(self.publication_version_path)
@@ -240,21 +258,19 @@ class MapPublication(object):
             unzip_file(pmz_file, map_folder)
 
             self.__fill_map_info(map_folder, map_info)
+            convert_map(map_folder, map_folder + '.converted')
             self.__convert_assets()
 
-            zip_folder(map_folder, publication_map_path)
+            zip_folder(map_folder + '.converted', publication_map_path)
             map_info['size'] = os.path.getsize(publication_map_path)
 
-        except:
-            print "Unexpected error:", sys.exc_info()
-            raise
         finally:
             shutil.rmtree(temp_folder)
 
     @staticmethod
     def __fill_map_info(map_folder, map_info):
         reader = IniReader()
-        reader.open(find_file_by_extension(map_folder, '.cty'), 'windows-1251')
+        reader.open(find_file_by_extension(map_folder, '.cty'))
         reader.section(u'Options')
 
         comments = []

@@ -47,6 +47,9 @@ def vector_sub(v1, v2):
 
 def cubic_interpolate(pts):
 
+    if(len(pts)) < 3:
+        return pts
+
     steps = 8
     count = len(pts) - 1
     coord = [0] * ((count * steps + 1) * 2)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
-from pmetro.readers import IniReader
 
+from pmetro.files import read_all_lines
 from pmetro.vec2svg import convert_vec_to_svg
 
 
@@ -10,42 +10,53 @@ def convert_map(src_path, dst_path):
     if not os.path.isdir(dst_path):
         os.mkdir(dst_path)
 
+    convert_map_database(src_path, dst_path)
+    convert_files(dst_path, src_path)
+
+
+def convert_files(dst_path, src_path):
     file_converters = {
-        'txt': (convert_txt_to_json, 'json'),
-        # 'vec': (convert_vec_to_svg, 'svg'),
-        'bmp': (__copy_file, 'bmp')
+        'vec': (convert_vec_to_svg, 'svg'),
+        'bmp': (shutil.copy, 'bmp')
     }
-
     map_files = os.listdir(src_path)
-
     for src_name in map_files:
         src_file_path = os.path.join(src_path, src_name)
+
         if not (os.path.isfile(src_file_path)):
             continue
 
         src_file_ext = src_file_path[-3:]
         if src_file_ext in file_converters:
             dst_file_path = os.path.join(dst_path, src_name[:-3] + file_converters[src_file_ext][1])
+            print 'Convert %s' % src_file_path
             file_converters[src_file_ext][0](src_file_path, dst_file_path)
+        else:
+            dst_file_path = os.path.join(dst_path, src_name)
+            print 'Copy %s' % src_file_path
+            shutil.copy(src_file_path, dst_file_path)
 
 
-def __copy_file(src_file_path, dst_file_path):
-    shutil.copy(src_file_path, dst_file_path)
+
+def convert_map_database(src_path, dst_path):
+    txt_files = sorted([f for f in os.listdir(src_path) if f.lower().endswith('.txt')])
+
+    for file_path in map(lambda x: os.path.join(src_path, x), txt_files):
+        convert_to_json(read_all_lines(file_path))
 
 
-def convert_txt_to_json(src_file_path, dst_file_path):
-    ini = IniReader()
-    ini.open(src_file_path, 'windows-1251')
-    ini.section(u'Options')
+def convert_to_json(lines):
+    section = None
+    for line in map(lambda x: x.strip().replace('\\n', '\n'), lines):
+        if line is None or line.startswith(';'):
+            continue
+        if line.startswith('[') and line.endswith(']'):
+            section = line[1:-1]
 
-    indent = ''
-    caption = '-'
 
-    while ini.read():
-        name = ini.name().strip()
-        if name == u'caption':
-            caption = ini.value()
-        if name == u'StringToAdd'.lower():
-            indent = ini.value().strip('\'').strip()
 
-    print '%s%s' % (indent, caption)
+
+
+
+
+
