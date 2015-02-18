@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
+from PIL import Image
 
 from pmetro.files import read_all_lines
 from pmetro.vec2svg import convert_vec_to_svg
@@ -17,7 +18,7 @@ def convert_map(src_path, dst_path):
 def convert_files(dst_path, src_path):
     file_converters = {
         'vec': (convert_vec_to_svg, 'svg'),
-        'bmp': (shutil.copy, 'bmp')
+        'bmp': (convert_bmp_to_png, 'png')
     }
     map_files = os.listdir(src_path)
     for src_name in map_files:
@@ -36,6 +37,9 @@ def convert_files(dst_path, src_path):
             print 'Copy %s' % src_file_path
             shutil.copy(src_file_path, dst_file_path)
 
+
+def convert_bmp_to_png(src_path, dst_path):
+    Image.open(src_path).save(dst_path)
 
 
 def convert_map_database(src_path, dst_path):
