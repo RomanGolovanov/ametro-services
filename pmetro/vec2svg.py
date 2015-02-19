@@ -71,11 +71,11 @@ def __vec_create_drawing(text, style):
         w, h = ('0', '0')
     style['size'] = (int(w), int(h))
     w, h = style['size']
-    dwg = svgwrite.Drawing(size=(str(w * 2) + 'px', str(h * 2) + 'px'), profile='tiny')
-    translate = 'translate(%s %s)' % (w / 2, h / 2)
-    g = dwg.g(transform=translate)
-    dwg.add(g)
-    return dwg, g
+    dwg = svgwrite.Drawing(size=(str(w) + 'px', str(h) + 'px'), profile='tiny')
+    #translate = 'translate(%s %s)' % (w / k, h / k)
+    #g = dwg.g(transform=translate)
+    #dwg.add(g)
+    return dwg, dwg
 
 
 def __vec_cmd_angle(dwg, root, text, style):
@@ -209,7 +209,14 @@ def __vec_cmd_arrow(dwg, root, text, style):
 
 
 def __vec_cmd_railway(dwg, root, text, style):
-    w1, w2, h1, x0, y0, x1, y1 = as_list(text)
+    lst = as_list(text)
+    w1 = lst[0]
+    w2 = lst[1]
+    h1 = lst[2]
+    x0 = lst[3]
+    y0 = lst[4]
+    x1 = lst[5]
+    y1 = lst[6]
 
     start = (float(x0), float(y0))
     end = (float(x1), float(y1))
