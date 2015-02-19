@@ -5,7 +5,8 @@ import svgwrite
 
 from pmetro.files import read_all_lines
 from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list
-from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate
+from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate, \
+    vector_left, vector_right
 
 UNKNOWN_COMMANDS = []
 
@@ -33,13 +34,13 @@ def convert_vec_to_svg(vec_file, svg_file):
         'angletextout': __vec_cmd_angle_text_out,
         'stairs': __vec_cmd_stairs,
         'arrow': __vec_cmd_arrow,
-        'dashed': __vec_cmd_line_dashed
+        'dashed': __vec_cmd_line_dashed,
+        'railway': __vec_cmd_railway
         # 'image,' 'railway', 'ellipse', 'textout', 'spotrect', 'spotcircle
     }
 
     lines = read_all_lines(vec_file)
-    dwg = __vec_create_drawing(lines[0], style)
-    root = dwg
+    dwg, root = __vec_create_drawing(lines[0], style)
     for l in lines[1:]:
         line = unicode(l).strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
@@ -64,12 +65,17 @@ def convert_vec_to_svg(vec_file, svg_file):
 
 
 def __vec_create_drawing(text, style):
-    if text.startswith('Size'):
+    if text.lower().startswith('size'):
         w, h = as_list(text[text.index(' '):].strip(), 'x')
     else:
-        w, h = ('1000', '1000')
+        w, h = ('0', '0')
     style['size'] = (int(w), int(h))
-    return svgwrite.Drawing(size=(w + 'px', h + 'px'), profile='tiny')
+    w, h = style['size']
+    dwg = svgwrite.Drawing(size=(str(w * 2) + 'px', str(h * 2) + 'px'), profile='tiny')
+    translate = 'translate(%s %s)' % (w / 2, h / 2)
+    g = dwg.g(transform=translate)
+    dwg.add(g)
+    return dwg, g
 
 
 def __vec_cmd_angle(dwg, root, text, style):
@@ -201,3 +207,47 @@ def __vec_cmd_arrow(dwg, root, text, style):
                          fill=style['pen'],
                          opacity=style['opaque']))
 
+
+def __vec_cmd_railway(dwg, root, text, style):
+    w1, w2, h1, x0, y0, x1, y1 = as_list(text)
+
+    start = (float(x0), float(y0))
+    end = (float(x1), float(y1))
+
+    v1 = vector_sub(start, end)
+
+    step_length = int(h1)
+    step_vec = vector_mul_s(v1, step_length / vector_mod(v1))
+    step_count = int(vector_mod(v1)) / step_length + 1
+
+    s1 = vector_mul_s(vector_right(v1), float(w1))
+    s2 = vector_mul_s(vector_left(v1), (float(w2) - float(w1)) / 2)
+    s3 = vector_mul_s(vector_right(v1), float(w1) + (float(w2) - float(w1)) / 2)
+
+    start2 = vector_add(start, s1)
+    end2 = vector_add(end, s1)
+
+    left = vector_add(vector_add(end, s2), step_vec)
+    right = vector_add(vector_add(end, s3), step_vec)
+
+    root.add(dwg.polyline(points=(start, end),
+                          stroke=style['pen'],
+                          stroke_width=1,
+                          fill='none',
+                          opacity=style['opaque']))
+
+    root.add(dwg.polyline(points=(start2, end2),
+                          stroke=style['pen'],
+                          stroke_width=1,
+                          fill='none',
+                          opacity=style['opaque']))
+
+    for it in range(0, step_count - 1):
+        root.add(dwg.polyline(points=(left, right),
+                              stroke=style['pen'],
+                              stroke_width=1,
+                              fill='none',
+                              opacity=style['opaque']))
+
+        left = vector_add(left, step_vec)
+        right = vector_add(right, step_vec)
