@@ -20,8 +20,10 @@ def as_point_list_with_width(text):
 
 def as_point_list(text=''):
     p = as_list(text)
+    lst = []
     for x in range(0, len(p) / 2):
-        yield (float(p[x * 2]), float(p[x * 2 + 1]))
+        lst.append((float(p[x * 2]), float(p[x * 2 + 1])))
+    return lst
 
 
 def as_list(text='', splitter=','):
@@ -30,6 +32,14 @@ def as_list(text='', splitter=','):
     for p in parts:
         lst.append(p.strip())
     return lst
+
+
+def as_points(items):
+    pts = list(items)
+    points = []
+    for x in range(0, len(pts) / 2):
+        points.append( (float(pts[x * 2]), float(pts[x * 2 + 1])) )
+    return points
 
 
 def as_rgb(text=''):

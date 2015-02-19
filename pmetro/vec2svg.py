@@ -4,11 +4,12 @@ import string
 import svgwrite
 
 from pmetro.files import read_all_lines
-from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list
+from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list, as_points
 from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate, \
     vector_left, vector_right
 
 UNKNOWN_COMMANDS = []
+MAP_EDGE_SIZE = 50
 
 
 def convert_vec_to_svg(vec_file, svg_file):
@@ -17,6 +18,7 @@ def convert_vec_to_svg(vec_file, svg_file):
         'pen': 'none',
         'opaque': 100,
         'size': (0, 0),
+        'rect': (0, 0, 0, 0),
         'angle': 0
     }
 
@@ -25,6 +27,7 @@ def convert_vec_to_svg(vec_file, svg_file):
     }
 
     commands = {
+        'size': __vec_cmd_size,
         'pencolor': __vec_cmd_pen_color,
         'brushcolor': __vec_cmd_brush_color,
         'opaque': __vec_cmd_opaque,
@@ -35,13 +38,17 @@ def convert_vec_to_svg(vec_file, svg_file):
         'stairs': __vec_cmd_stairs,
         'arrow': __vec_cmd_arrow,
         'dashed': __vec_cmd_line_dashed,
-        'railway': __vec_cmd_railway
+        'railway': __vec_cmd_railway,
+        'ellipse': __vec_cmd_ellipse
         # 'image,' 'railway', 'ellipse', 'textout', 'spotrect', 'spotcircle
     }
 
-    lines = read_all_lines(vec_file)
-    dwg, root = __vec_create_drawing(lines[0], style)
-    for l in lines[1:]:
+    dwg = svgwrite.Drawing(profile='tiny')
+    root_container = dwg.g()
+    dwg.add(root_container)
+    root = root_container
+
+    for l in read_all_lines(vec_file):
         line = unicode(l).strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
             style['pen'] = 'black'
@@ -61,29 +68,25 @@ def convert_vec_to_svg(vec_file, svg_file):
         else:
             commands[cmd](dwg, root, txt, style)
 
+    w, h = style['size']
+    x0, y0, x1, y1 = style['rect']
+    dwg.attribs['width'] = '%spx' % int(x1 - x0 + MAP_EDGE_SIZE * 2)
+    dwg.attribs['height'] = '%spx' % int(y1 - y0 + MAP_EDGE_SIZE * 2)
+    root_container.attribs['transform'] = 'translate(%s,%s)' % ( -x0 + MAP_EDGE_SIZE, -y0 + MAP_EDGE_SIZE )
+
     dwg.saveas(svg_file)
 
 
-def __vec_create_drawing(text, style):
-    if text.lower().startswith('size'):
-        w, h = as_list(text[text.index(' '):].strip(), 'x')
-    else:
-        w, h = ('0', '0')
+def __vec_cmd_size(dwg, root, text, style):
+    w, h = as_list(text, 'x')
     style['size'] = (int(w), int(h))
-    w, h = style['size']
-    dwg = svgwrite.Drawing(size=(str(w) + 'px', str(h) + 'px'), profile='tiny')
-    #translate = 'translate(%s %s)' % (w / k, h / k)
-    #g = dwg.g(transform=translate)
-    #dwg.add(g)
-    return dwg, dwg
 
 
 def __vec_cmd_angle(dwg, root, text, style):
     angle = float(text)
-    current_angle = style['angle']
-    style['angle'] = angle
+    style['angle'] += angle
     w, h = style['size']
-    rotate = 'rotate(%s,%s,%s)' % (current_angle - angle, w / 2, h / 2)
+    rotate = 'rotate(%s,%s,%s)' % (- angle, w / 2, h / 2)
     new_root = dwg.g(transform=rotate)
     root.add(new_root)
     return new_root
@@ -105,6 +108,7 @@ def __vec_cmd_angle_text_out(dwg, root, text, style):
         font_weight = 'bold'
     txt = txt.strip('\'')
 
+    __update_bounding_box((pos,), style)
     root.add(dwg.text(text=txt,
                       insert=pos,
                       font_family=font_style,
@@ -117,6 +121,7 @@ def __vec_cmd_angle_text_out(dwg, root, text, style):
 
 def __vec_cmd_polygon(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
+    __update_bounding_box(pts, style)
     root.add(dwg.polygon(points=pts,
                          stroke=style['pen'],
                          stroke_width=width,
@@ -126,6 +131,7 @@ def __vec_cmd_polygon(dwg, root, text, style):
 
 def __vec_cmd_line(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
+    __update_bounding_box(pts, style)
     root.add(dwg.polyline(points=pts,
                           stroke=style['pen'],
                           stroke_width=width,
@@ -135,6 +141,7 @@ def __vec_cmd_line(dwg, root, text, style):
 
 def __vec_cmd_spline(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
+    __update_bounding_box(pts, style)
     c = cubic_interpolate(pts)
     root.add(dwg.polyline(points=c,
                           stroke=style['pen'],
@@ -145,6 +152,7 @@ def __vec_cmd_spline(dwg, root, text, style):
 
 def __vec_cmd_line_dashed(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
+    __update_bounding_box(pts, style)
     root.add(dwg.polyline(points=pts,
                           stroke=style['pen'],
                           stroke_width=width,
@@ -167,6 +175,7 @@ def __vec_cmd_pen_color(dwg, root, text, style):
 
 def __vec_cmd_stairs(dwg, root, text, style):
     start, end, target = as_point_list(text)
+    __update_bounding_box((start, end, target), style)
 
     step_length = 4
     path_vec = vector_sub(target, start)
@@ -186,11 +195,7 @@ def __vec_cmd_stairs(dwg, root, text, style):
 
 def __vec_cmd_arrow(dwg, root, text, style):
     pts, width = as_point_list_with_width(text)
-    root.add(dwg.polyline(points=pts,
-                          stroke=style['pen'],
-                          stroke_width=width,
-                          fill='none',
-                          opacity=style['opaque']))
+    __update_bounding_box(pts, style)
 
     start = pts[len(pts) - 2]
     end = pts[len(pts) - 1]
@@ -201,6 +206,12 @@ def __vec_cmd_arrow(dwg, root, text, style):
     left_side = vector_add(vector_rotate(v, angle), end)
     right_side = vector_add(vector_rotate(v, -angle), end)
 
+    root.add(dwg.polyline(points=pts,
+                          stroke=style['pen'],
+                          stroke_width=width,
+                          fill='none',
+                          opacity=style['opaque']))
+
     root.add(dwg.polygon(points=[right_side, end, left_side],
                          stroke=style['pen'],
                          stroke_width=width,
@@ -208,53 +219,89 @@ def __vec_cmd_arrow(dwg, root, text, style):
                          opacity=style['opaque']))
 
 
+def __vec_cmd_ellipse(dwg, root, text, style):
+    pts = as_point_list(text)
+    __update_bounding_box(pts, style)
+    delta = vector_mul_s(vector_sub(pts[1], pts[0]), 0.5)
+    root.add(dwg.ellipse(center=vector_add(pts[0], delta),
+                         r=delta,
+                         stroke=style['pen'],
+                         stroke_width=1,
+                         fill=style['brush'],
+                         opacity=style['opaque']))
+
+
+
 def __vec_cmd_railway(dwg, root, text, style):
     lst = as_list(text)
     w1 = lst[0]
     w2 = lst[1]
     h1 = lst[2]
-    x0 = lst[3]
-    y0 = lst[4]
-    x1 = lst[5]
-    y1 = lst[6]
 
-    start = (float(x0), float(y0))
-    end = (float(x1), float(y1))
+    pts = as_points(lst[3:])
+    __update_bounding_box(pts, style)
 
-    v1 = vector_sub(start, end)
+    for i in range(0, len(pts) - 1):
+        start = pts[i + 1]
+        end = pts[i]
 
-    step_length = int(h1)
-    step_vec = vector_mul_s(v1, step_length / vector_mod(v1))
-    step_count = int(vector_mod(v1)) / step_length + 1
+        v1 = vector_sub(start, end)
 
-    s1 = vector_mul_s(vector_right(v1), float(w1))
-    s2 = vector_mul_s(vector_left(v1), (float(w2) - float(w1)) / 2)
-    s3 = vector_mul_s(vector_right(v1), float(w1) + (float(w2) - float(w1)) / 2)
+        step_length = int(h1)
+        step_vec = vector_mul_s(v1, step_length / vector_mod(v1))
+        step_count = int(vector_mod(v1)) / step_length + 1
 
-    start2 = vector_add(start, s1)
-    end2 = vector_add(end, s1)
+        s1 = vector_mul_s(vector_left(v1), float(w1))
+        s2 = vector_mul_s(vector_right(v1), (float(w2) - float(w1)) / 2)
+        s3 = vector_mul_s(vector_left(v1), float(w1) + (float(w2) - float(w1)) / 2)
 
-    left = vector_add(vector_add(end, s2), step_vec)
-    right = vector_add(vector_add(end, s3), step_vec)
+        start2 = vector_add(start, s1)
+        end2 = vector_add(end, s1)
 
-    root.add(dwg.polyline(points=(start, end),
-                          stroke=style['pen'],
-                          stroke_width=1,
-                          fill='none',
-                          opacity=style['opaque']))
+        left = vector_add(vector_add(end, s2), step_vec)
+        right = vector_add(vector_add(end, s3), step_vec)
 
-    root.add(dwg.polyline(points=(start2, end2),
-                          stroke=style['pen'],
-                          stroke_width=1,
-                          fill='none',
-                          opacity=style['opaque']))
-
-    for it in range(0, step_count - 1):
-        root.add(dwg.polyline(points=(left, right),
+        root.add(dwg.polyline(points=(start, end),
                               stroke=style['pen'],
                               stroke_width=1,
                               fill='none',
                               opacity=style['opaque']))
 
-        left = vector_add(left, step_vec)
-        right = vector_add(right, step_vec)
+        root.add(dwg.polyline(points=(start2, end2),
+                              stroke=style['pen'],
+                              stroke_width=1,
+                              fill='none',
+                              opacity=style['opaque']))
+
+        for it in range(0, step_count - 1):
+            root.add(dwg.polyline(points=(left, right),
+                                  stroke=style['pen'],
+                                  stroke_width=1,
+                                  fill='none',
+                                  opacity=style['opaque']))
+
+            left = vector_add(left, step_vec)
+            right = vector_add(right, step_vec)
+
+
+def __update_bounding_box(points, style):
+    w, h = style['size']
+    angle = style['angle']
+    x0, y0, x1, y1 = style['rect']
+
+    c = (w / 2, h / 2)
+
+    for p in points:
+        x, y = vector_add(vector_rotate(vector_sub(p, c), -angle), c)
+        if x < x0:
+            x0 = x
+        if y < y0:
+            y0 = y
+
+        if x > x1:
+            x1 = x
+        if y > y1:
+            y1 = y
+
+    style['rect'] = (x0, y0, x1, y1)
+
