@@ -68,7 +68,7 @@ def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
         txt = line[space_index:].strip()
 
         if cmd not in commands and cmd not in container_commands:
-            log.debug('Unknown command %s in file %s at line %s' % (cmd, vec_file, line_index - 1))
+            log.warning('Unknown command %s in file %s at line %s' % (cmd, vec_file, line_index - 1))
             continue
 
         if cmd in container_commands:

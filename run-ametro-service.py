@@ -1,11 +1,11 @@
 # /usr/bin/env python3
-
+import datetime
 import os
+
+FORCE_UPDATE=False
 
 from pmetro.catalog import MapCache, MapPublication
 from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
-from pmetro.map import convert_map
-from pmetro.vec2svg import convert_vec_to_svg
 
 base_dir = ''
 
@@ -17,18 +17,17 @@ pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
 
 log = CompositeLog([
     ConsoleLog(level=LogLevel.Info),
-    FileLog(file_path='import.log', level=LogLevel.Debug)
+    FileLog(file_path='import.verbose.log', level=LogLevel.Debug),
+    FileLog(file_path='import.log', level=LogLevel.Warning)
 ])
 
-# cache = MapCache(pmetro_url, cache_path, log)
-#cache.refresh()
+log.info('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
-#publication = MapPublication(publication_path, temp_path, log)
-#publication.import_maps(cache_path)
+cache = MapCache(pmetro_url, cache_path, temp_path, log)
+cache.refresh(force=FORCE_UPDATE)
 
-convert_map('TestMap', 'TestMapConverted', ConsoleLog())
+publication = MapPublication(publication_path, temp_path, log)
+publication.import_maps(cache_path, force=FORCE_UPDATE)
 
-# for f in [x for x in os.listdir('.') if x.endswith('vec')]:
-#     print('Convert file %s' % f)
-#     convert_vec_to_svg(f, f[:-4] + '.svg', ConsoleLog())
+log.info('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 

@@ -15,6 +15,8 @@ from pmetro.log import EmptyLog
 from pmetro.map import convert_map
 from pmetro.readers import IniReader
 
+DOWNLOAD_MAP_MAX_RETRIES = 5
+
 
 class MapCatalog(object):
     def __init__(self, maps=None):
@@ -32,7 +34,10 @@ class MapCatalog(object):
             'longitude': longitude,
             'file': file_name,
             'size': size,
-            'version': version
+            'version': version,
+            'comments': None,
+            'description': None,
+            'map_id': None
         })
 
     def save(self, path):
@@ -74,64 +79,101 @@ class MapCatalog(object):
             if m['file'] == file_name:
                 return m
 
+    def find_list_by_id(self, map_id):
+        lst = []
+        for m in self.maps:
+            if m['map_id'] == map_id:
+                lst.append(m)
+        return lst
+
     @staticmethod
-    def clone(source_map):
+    def clone(src_map):
         cloned_map = {
-            'id': source_map['id'],
-            'city': source_map['city'],
-            'iso': source_map['iso'],
-            'country': source_map['country'],
-            'latitude': source_map['latitude'],
-            'longitude': source_map['longitude'],
-            'file': source_map['file'],
-            'size': source_map['size'],
-            'version': source_map['version']
+            'id': src_map['id'],
+            'city': src_map['city'],
+            'map_id': src_map['map_id'],
+            'description': src_map['description'],
+            'comments': src_map['comments'],
+            'iso': src_map['iso'],
+            'country': src_map['country'],
+            'latitude': src_map['latitude'],
+            'longitude': src_map['longitude'],
+            'file': src_map['file'],
+            'size': src_map['size'],
+            'version': src_map['version']
         }
         return cloned_map
+
+    @staticmethod
+    def copy(src_map, dst_map):
+        dst_map['id'] = src_map['id']
+        dst_map['city'] = src_map['city']
+        dst_map['map_id'] = src_map['map_id']
+        dst_map['description'] = src_map['description']
+        dst_map['comments'] = src_map['comments']
+        dst_map['iso'] = src_map['iso']
+        dst_map['country'] = src_map['country']
+        dst_map['latitude'] = src_map['latitude']
+        dst_map['longitude'] = src_map['longitude']
+        dst_map['file'] = src_map['file']
+        dst_map['size'] = src_map['size']
+        dst_map['version'] = src_map['version']
 
     def add_map(self, map_info):
         self.maps.append(map_info)
 
 
+def load_catalog(path):
+    catalog = MapCatalog()
+    # noinspection PyBroadException
+    try:
+        catalog.load(path)
+    except:
+        catalog = MapCatalog()
+    return catalog
+
+
 class MapCache(object):
-    def __init__(self, service_url, cache_path, log=EmptyLog()):
+    def __init__(self, service_url, cache_path, temp_path, log=EmptyLog()):
+
+        self.ignore_list = [
+            'Moscow3d.zip',
+            'MoscowGrd.zip',
+            'Moscow_skor.zip',
+            'Moscow_pix.zip',
+            'MoscowHistory.zip'
+        ]
+
         self.download_chunk_size = 16 * 1024
         self.service_url = service_url
         self.cache_path = cache_path
         self.cache_index_path = os.path.join(cache_path, 'index.json')
         self.log = log
 
+        self.temp_path = temp_path
+        if not os.path.isdir(temp_path):
+            os.mkdir(temp_path)
+
         if not os.path.isdir(cache_path):
             os.mkdir(cache_path)
 
-    def refresh(self):
-
+    def refresh(self, force=False):
         new_catalog = self.__download_map_index()
+        old_catalog = load_catalog(self.cache_index_path)
 
-        old_catalog = MapCatalog()
-
-        # noinspection PyBroadException
-        try:
-            old_catalog.load(self.cache_index_path)
-        except:
-            old_catalog = None
-
-        if old_catalog is None:
-            for new_map in new_catalog.maps:
+        for new_map in new_catalog.maps:
+            old_map = old_catalog.find_by_file(new_map['file'])
+            if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
                 self.__download_map(new_map)
-        else:
-            for new_map in new_catalog.maps:
-                old_map = old_catalog.find_by_file(new_map['file'])
-                if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
-                    self.__download_map(new_map)
-                else:
-                    self.log.info('Map [%s] already downloaded.' % new_map['file'])
+            else:
+                self.log.info('Map [%s] already downloaded.' % new_map['file'])
+                MapCatalog.copy(old_map, new_map)
 
-            for old_map in old_catalog.maps:
-                new_map = new_catalog.find_by_file(old_map['file'])
-                if new_map is None:
-                    os.remove(os.path.join(self.cache_path, old_map['file']))
-                    self.log.info('Map [%s] removed as obsolete.' % old_map['file'])
+        for old_map in old_catalog.maps:
+            new_map = new_catalog.find_by_file(old_map['file'])
+            if new_map is None:
+                os.remove(os.path.join(self.cache_path, old_map['file']))
+                self.log.info('Map [%s] removed as obsolete.' % old_map['file'])
 
         new_catalog.save(self.cache_index_path)
 
@@ -147,6 +189,10 @@ class MapCache(object):
             file_name = el.find('Zip').attrib['Name']
             size = int(el.find('Zip').attrib['Size'])
             version = int(el.find('Zip').attrib['Date'])
+
+            if file_name in self.ignore_list:
+                self.log.info('Ignored [%s].' % file_name)
+                continue
 
             if country_name == ' Программа' or city_name == '':
                 self.log.info('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
@@ -171,80 +217,113 @@ class MapCache(object):
         return catalog
 
     def __download_map(self, map_item):
-        temp_file_path = os.path.join(self.cache_path, map_item['file'] + '.download')
+        map_file = map_item['file']
+        tmp_path = os.path.join(self.cache_path, map_file + '.download')
+        map_path = os.path.join(self.cache_path, map_file)
+
+        retry = 0
+        while retry < DOWNLOAD_MAP_MAX_RETRIES:
+            retry += 1
+
+            if os.path.isfile(tmp_path):
+                os.remove(tmp_path)
+            try:
+                urllib.request.urlretrieve(self.service_url + map_file, tmp_path)
+            except URLError:
+                self.log.debug('Map [%s] download error, wait and retry.' % map_file)
+                sleep(0.5)
+                continue
+
+            self.__fill_map_info(tmp_path, map_item)
+
+            if os.path.isfile(map_path):
+                os.remove(map_path)
+
+            os.rename(tmp_path, map_path)
+            self.log.info('Downloaded [%s]' % map_file)
+            return
+        raise IOError('Max retries for downloading file [%s] reached. Terminate.' % map_file)
+
+    def __fill_map_info(self, map_file, map_item):
+        self.log.info('Extract map info from [%s]' % map_file)
+        temp_folder = os.path.join(self.temp_path, uuid.uuid1().hex)
         try:
-            urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
-        except URLError:
-            self.log.debug('Map [%s] download error, wait a second and retry.' % map_item['file'])
-            sleep(1)
-            urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
+            unzip_file(map_file, temp_folder)
+            pmz_file = find_file_by_extension(temp_folder, '.pmz')
+            map_folder = pmz_file[0:-4]
+            unzip_file(pmz_file, map_folder)
 
-        map_file_path = os.path.join(self.cache_path, map_item['file'])
-        if os.path.isfile(map_file_path):
-            os.remove(map_file_path)
+            self.__extract_map_info(map_folder, map_item)
 
-        os.rename(temp_file_path, map_file_path)
-        self.log.info('Downloaded [%s]' % map_item['file'])
+        finally:
+            shutil.rmtree(temp_folder)
+
+    @staticmethod
+    def __extract_map_info(map_folder, map_item):
+        reader = IniReader()
+        reader.open(find_file_by_extension(map_folder, '.cty'))
+        reader.section('Options')
+
+        map_id = uuid.uuid1().hex
+        comments = []
+        description = []
+        while reader.read():
+            if reader.name() == 'name':
+                map_id = reader.value()
+            if reader.name() == 'comment':
+                comments.append(reader.value().replace('\\n', '\n').rstrip())
+            if reader.name() == 'mapauthors':
+                description.append(reader.value().replace('\\n', '\n').rstrip())
+        map_item['map_id'] = map_id
+        if any(comments):
+            map_item['comments'] = '\n'.join(comments).rstrip('\n')
+        if any(description):
+            map_item['description'] = '\n'.join(description).rstrip('\n')
 
 
 class MapPublication(object):
     def __init__(self, publication_path, temp_path, log=EmptyLog()):
-
-        self.ignore_list = [
-            'Moscow3d.zip',
-            'MoscowGrd.zip',
-            'Moscow_skor.zip',
-            'Moscow_pix.zip',
-            'MoscowHistory.zip'
-        ]
-
         self.log = log
-
-        self.temp_path = temp_path
-        if not os.path.isdir(temp_path):
-            os.mkdir(temp_path)
-
         self.publication_path = publication_path
         self.publication_index_path = os.path.join(publication_path, 'index.json')
         self.publication_version_path = os.path.join(publication_path, 'version.json')
         self.publication_countries_path = os.path.join(publication_path, 'countries.json')
+        self.temp_path = temp_path
+        if not os.path.isdir(temp_path):
+            os.mkdir(temp_path)
         if not os.path.isdir(publication_path):
             os.mkdir(publication_path)
 
+    @staticmethod
+    def __create_map_description(map_info_list):
+        lst = sorted(map_info_list, key=lambda x: x['file'])
+        max_version = max([x['version'] for x in lst])
+        map_item = MapCatalog.clone(lst[0])
+        map_item['version'] = max_version
+        return map_item
 
-    def import_maps(self, cache_path):
-
-        cached_catalog = MapCatalog()
-        cached_catalog.load(os.path.join(cache_path, 'index.json'))
-
-        old_catalog = MapCatalog()
-
-        # noinspection PyBroadException
-        try:
-            old_catalog.load(self.publication_index_path)
-        except:
-            old_catalog = MapCatalog()
-
+    def import_maps(self, cache_path, force=False):
+        cached_catalog = load_catalog(os.path.join(cache_path, 'index.json'))
+        old_catalog = load_catalog(self.publication_index_path)
         published_catalog = MapCatalog()
-        for cached_map in cached_catalog.maps:
-            map_info = published_catalog.clone(cached_map)
+        for map_id in sorted(set([m['map_id'] for m in cached_catalog.maps])):
+            cached_list = cached_catalog.find_list_by_id(map_id)
+            cached_file_list = [x['file'] for x in cached_list]
+
+            map_info = MapPublication.__create_map_description(cached_list)
             map_file = map_info['file']
-
-            if map_file in self.ignore_list:
-                self.log.info('Map [%s] ignored.' % map_file)
-                continue
-
             old_map = old_catalog.find_by_file(map_file)
-            if old_map is not None and old_map['version'] == map_info['version']:
-                published_catalog.add_map(old_map)
-                self.log.info('Map [%s] already published.' % map_file)
+
+            if not force and old_map is not None and old_map['version'] == map_info['version']:
+                self.log.info('Maps [%s] already published as [%s].' % (cached_file_list, map_file))
+                published_catalog.add_map(map_info)
                 continue
 
             # noinspection PyBroadException
             try:
-                self.__import_map(cache_path, map_file, map_info)
+                self.__import_maps(cache_path, cached_list, map_info)
+                self.log.info('Map(s) [%s] imported as [%s].' % (cached_file_list, map_file))
                 published_catalog.add_map(map_info)
-                self.log.info('Map [%s] imported.' % map_file)
             except:
                 self.log.info('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
 
@@ -252,58 +331,33 @@ class MapPublication(object):
         published_catalog.save_version(self.publication_version_path)
         published_catalog.save_countries(self.publication_countries_path)
 
-    def __import_map(self, cache_path, map_file, map_info):
-        publication_map_path = os.path.join(self.publication_path, map_file)
-        temp_folder = os.path.join(self.temp_path, uuid.uuid1().hex)
+    def __import_maps(self, cache_path, src_map_list, dst_map):
+        publication_map_path = os.path.join(self.publication_path, dst_map['file'])
+        temp_root = self.__create_tmp()
         try:
-            unzip_file(os.path.join(cache_path, map_file), temp_folder)
+            map_folder = self.__create_tmp(temp_root)
+            for src_zip_with_pmz in [os.path.join(cache_path, x['file']) for x in src_map_list]:
+                map_folder = self.__extract_pmz(src_zip_with_pmz, temp_root, map_folder)
 
-            pmz_file = find_file_by_extension(temp_folder, '.pmz')
-            map_folder = pmz_file[0:-4]
-            unzip_file(pmz_file, map_folder)
-
-            self.__fill_map_info(map_folder, map_info)
             convert_map(map_folder, map_folder + '.converted', self.log)
-            self.__convert_assets()
 
             zip_folder(map_folder + '.converted', publication_map_path)
-            map_info['size'] = os.path.getsize(publication_map_path)
+            dst_map['size'] = os.path.getsize(publication_map_path)
 
         finally:
-            shutil.rmtree(temp_folder)
+            shutil.rmtree(temp_root)
 
-    @staticmethod
-    def __fill_map_info(map_folder, map_info):
-        reader = IniReader()
-        reader.open(find_file_by_extension(map_folder, '.cty'))
-        reader.section('Options')
+    def __extract_pmz(self, src_zip_with_pmz, temp_folder, map_folder):
+        extract_folder = self.__create_tmp(temp_folder)
+        unzip_file(src_zip_with_pmz, extract_folder)
+        pmz_file = find_file_by_extension(extract_folder, '.pmz')
+        unzip_file(pmz_file, map_folder)
+        return map_folder
 
-        comments = []
-        description = []
-        while reader.read():
-            if reader.name() == 'comment':
-                comments.append(reader.value().replace('\\n', '\n').rstrip())
-            if reader.name() == 'mapauthors':
-                description.append(reader.value().replace('\\n', '\n').rstrip())
-
-        if any(comments):
-            map_info['comments'] = '\n'.join(comments).rstrip('\n')
-
-        if any(description):
-            map_info['description'] = '\n'.join(description).rstrip('\n')
-
-    def __convert_assets(self):
-        pass
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def __create_tmp(self, folder=None, create=True):
+        if folder is None:
+            folder = self.temp_path
+        tmp_folder = os.path.join(folder, uuid.uuid1().hex)
+        if create:
+            os.mkdir(tmp_folder)
+        return tmp_folder

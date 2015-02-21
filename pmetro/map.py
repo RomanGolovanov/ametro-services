@@ -1,9 +1,6 @@
 import os
-import shutil
 
 from PIL import Image
-
-from pmetro.files import read_all_lines
 
 from pmetro.log import EmptyLog
 from pmetro.vec2svg import convert_vec_to_svg

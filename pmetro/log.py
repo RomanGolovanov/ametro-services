@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 
 
 class LogLevel(object):
@@ -28,6 +27,9 @@ class BaseLog(object):
     def error(self, message):
         self.write(message, LogLevel.Error)
 
+    def warning(self, message):
+        self.write(message, LogLevel.Warning)
+
     def debug(self, message):
         self.write(message, LogLevel.Debug)
 
@@ -37,7 +39,8 @@ class EmptyLog(BaseLog):
 
 
 class CompositeLog(BaseLog):
-    def __init__(self, loggers=[]):
+    def __init__(self, loggers=None):
+        super(CompositeLog, self).__init__(LogLevel.Debug)
         self.loggers = loggers
 
     def __enter__(self):
