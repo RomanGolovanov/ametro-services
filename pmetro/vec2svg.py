@@ -6,12 +6,12 @@ from pmetro.files import read_all_lines
 from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list, as_points
 from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate, \
     vector_left, vector_right
+from pmetro.log import EmptyLog
 
-UNKNOWN_COMMANDS = []
-MAP_EDGE_SIZE = 50
+__MAP_EDGE_SIZE = 50
 
 
-def convert_vec_to_svg(vec_file, svg_file):
+def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
     style = {
         'brush': 'none',
         'pen': 'none',
@@ -47,7 +47,9 @@ def convert_vec_to_svg(vec_file, svg_file):
     dwg.add(root_container)
     root = root_container
 
+    line_index = 0;
     for l in read_all_lines(vec_file):
+        line_index += 1
         line = l.strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
             style['pen'] = 'black'
@@ -58,8 +60,7 @@ def convert_vec_to_svg(vec_file, svg_file):
         txt = line[space_index:].strip()
 
         if cmd not in commands and cmd not in container_commands:
-            if cmd not in UNKNOWN_COMMANDS:
-                UNKNOWN_COMMANDS.append(cmd)
+            log.debug('Unknown command %s in file %s at line %s' % (cmd, vec_file, line_index-1))
             continue
 
         if cmd in container_commands:
@@ -69,9 +70,9 @@ def convert_vec_to_svg(vec_file, svg_file):
 
     w, h = style['size']
     x0, y0, x1, y1 = style['rect']
-    dwg.attribs['width'] = '%spx' % int(x1 - x0 + MAP_EDGE_SIZE * 2)
-    dwg.attribs['height'] = '%spx' % int(y1 - y0 + MAP_EDGE_SIZE * 2)
-    root_container.attribs['transform'] = 'translate(%s,%s)' % ( -x0 + MAP_EDGE_SIZE, -y0 + MAP_EDGE_SIZE )
+    dwg.attribs['width'] = '%spx' % int(x1 - x0 + __MAP_EDGE_SIZE * 2)
+    dwg.attribs['height'] = '%spx' % int(y1 - y0 + __MAP_EDGE_SIZE * 2)
+    root_container.attribs['transform'] = 'translate(%s,%s)' % ( -x0 + __MAP_EDGE_SIZE, -y0 + __MAP_EDGE_SIZE )
 
     dwg.saveas(svg_file)
 
@@ -228,7 +229,6 @@ def __vec_cmd_ellipse(dwg, root, text, style):
                          stroke_width=1,
                          fill=style['brush'],
                          opacity=style['opaque']))
-
 
 
 def __vec_cmd_railway(dwg, root, text, style):

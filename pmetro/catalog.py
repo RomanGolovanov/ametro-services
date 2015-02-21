@@ -2,7 +2,6 @@ import codecs
 import json
 import os
 import shutil
-import string
 from time import sleep
 from urllib.error import URLError
 import urllib.request
@@ -12,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 from globalization.GeoNames import GeoNamesProvider
 from pmetro.files import unzip_file, zip_folder, find_file_by_extension
+from pmetro.log import EmptyLog
 from pmetro.map import convert_map
 from pmetro.readers import IniReader
 
@@ -94,11 +94,12 @@ class MapCatalog(object):
 
 
 class MapCache(object):
-    def __init__(self, service_url, cache_path):
+    def __init__(self, service_url, cache_path, log=EmptyLog()):
         self.download_chunk_size = 16 * 1024
         self.service_url = service_url
         self.cache_path = cache_path
         self.cache_index_path = os.path.join(cache_path, 'index.json')
+        self.log = log
 
         if not os.path.isdir(cache_path):
             os.mkdir(cache_path)
@@ -123,11 +124,14 @@ class MapCache(object):
                 old_map = old_catalog.find_by_file(new_map['file'])
                 if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
                     self.__download_map(new_map)
+                else:
+                    self.log.info('Map [%s] already downloaded.' % new_map['file'])
 
             for old_map in old_catalog.maps:
                 new_map = new_catalog.find_by_file(old_map['file'])
                 if new_map is None:
-                    os.remove(os.path.join(self.cache_path, new_map['file']))
+                    os.remove(os.path.join(self.cache_path, old_map['file']))
+                    self.log.info('Map [%s] removed as obsolete.' % old_map['file'])
 
         new_catalog.save(self.cache_index_path)
 
@@ -145,12 +149,12 @@ class MapCache(object):
             version = int(el.find('Zip').attrib['Date'])
 
             if country_name == ' Программа' or city_name == '':
-                print('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
+                self.log.info('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
             city = geonames_provider.find_city(city_name, country_name)
             if city is None:
-                print('Not found %s, [%s]/[%s]' % (file_name, city_name, country_name))
+                self.log.info('Not found %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
             catalog.add(
@@ -171,6 +175,7 @@ class MapCache(object):
         try:
             urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
         except URLError:
+            self.log.debug('Map [%s] download error, wait a second and retry.' % map_item['file'])
             sleep(1)
             urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
 
@@ -179,11 +184,11 @@ class MapCache(object):
             os.remove(map_file_path)
 
         os.rename(temp_file_path, map_file_path)
-        print('Downloaded [%s]' % map_item['file'])
+        self.log.info('Downloaded [%s]' % map_item['file'])
 
 
 class MapPublication(object):
-    def __init__(self, publication_path, temp_path):
+    def __init__(self, publication_path, temp_path, log=EmptyLog()):
 
         self.ignore_list = [
             'Moscow3d.zip',
@@ -192,6 +197,8 @@ class MapPublication(object):
             'Moscow_pix.zip',
             'MoscowHistory.zip'
         ]
+
+        self.log = log
 
         self.temp_path = temp_path
         if not os.path.isdir(temp_path):
@@ -203,6 +210,7 @@ class MapPublication(object):
         self.publication_countries_path = os.path.join(publication_path, 'countries.json')
         if not os.path.isdir(publication_path):
             os.mkdir(publication_path)
+
 
     def import_maps(self, cache_path):
 
@@ -223,22 +231,22 @@ class MapPublication(object):
             map_file = map_info['file']
 
             if map_file in self.ignore_list:
-                print('Map [%s] ignored.' % map_file)
+                self.log.info('Map [%s] ignored.' % map_file)
                 continue
 
             old_map = old_catalog.find_by_file(map_file)
             if old_map is not None and old_map['version'] == map_info['version']:
                 published_catalog.add_map(old_map)
-                print('Map [%s] already published.' % map_file)
+                self.log.info('Map [%s] already published.' % map_file)
                 continue
 
             # noinspection PyBroadException
             try:
                 self.__import_map(cache_path, map_file, map_info)
                 published_catalog.add_map(map_info)
-                print('Map [%s] imported.' % map_file)
+                self.log.info('Map [%s] imported.' % map_file)
             except:
-                print('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
+                self.log.info('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
 
         published_catalog.save(self.publication_index_path)
         published_catalog.save_version(self.publication_version_path)
@@ -255,7 +263,7 @@ class MapPublication(object):
             unzip_file(pmz_file, map_folder)
 
             self.__fill_map_info(map_folder, map_info)
-            convert_map(map_folder, map_folder + '.converted')
+            convert_map(map_folder, map_folder + '.converted', self.log)
             self.__convert_assets()
 
             zip_folder(map_folder + '.converted', publication_map_path)
@@ -268,7 +276,7 @@ class MapPublication(object):
     def __fill_map_info(map_folder, map_info):
         reader = IniReader()
         reader.open(find_file_by_extension(map_folder, '.cty'))
-        reader.section(u'Options')
+        reader.section('Options')
 
         comments = []
         description = []

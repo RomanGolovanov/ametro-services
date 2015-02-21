@@ -12,7 +12,7 @@ class IniReader(object):
 
     def section(self, section):
         index = 0
-        pattern = u'[' + section + u']'
+        pattern = '[' + section + ']'
         while index < len(self.lines):
             if self.lines[index].strip().lower() == pattern.lower():
                 self.position = index
