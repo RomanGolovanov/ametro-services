@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from pmetro.files import read_all_lines
 
 
@@ -38,9 +36,9 @@ class IniReader(object):
         return True
 
     def name(self):
-        return self.lines[self.position].strip().lower().split(u'=')[0]
+        return self.lines[self.position].strip().lower().split('=')[0]
 
     def value(self):
-        return self.lines[self.position].strip().split(u'=')[1]
+        return self.lines[self.position].strip().split('=')[1]
 
 

@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# /usr/bin/env python3
 
 import os
 
@@ -13,14 +12,15 @@ cache_path = os.path.join(base_dir, 'cache')
 publication_path = os.path.join(base_dir, 'www')
 temp_path = os.path.join(base_dir, 'tmp')
 
-pmetro_url = 'http://pmetro.chpeks.com/'
+pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
 
-#cache = MapCache(pmetro_url, cache_path)
-#cache.refresh()
-#publication = MapPublication(publication_path, temp_path)
-#publication.import_maps(cache_path)
+cache = MapCache(pmetro_url, cache_path)
+cache.refresh()
+
+publication = MapPublication(publication_path, temp_path)
+publication.import_maps(cache_path)
 
 #convert_map('MoscowMap', 'MoscowMap.converted')
-convert_vec_to_svg('TSaritsynoZhD.vec','TSaritsynoZhD.svg')
+#convert_vec_to_svg('TSaritsynoZhD.vec','TSaritsynoZhD.svg')
 
-print 'Unknown commands: %s' % UNKNOWN_COMMANDS
+print('Unknown commands: ', UNKNOWN_COMMANDS)

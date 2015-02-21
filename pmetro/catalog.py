@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 import codecs
 import json
 import os
 import shutil
 import string
-import urllib
-import urllib2
+from time import sleep
+from urllib.error import URLError
+import urllib.request
 import uuid
 import sys
 import xml.etree.ElementTree as ET
@@ -134,7 +134,7 @@ class MapCache(object):
     def __download_map_index(self):
         geonames_provider = GeoNamesProvider()
 
-        xml_maps = urllib.urlopen(self.service_url + 'Files.xml').read().decode('windows-1251').encode('utf-8')
+        xml_maps = urllib.request.urlopen(self.service_url + 'Files.xml').read().decode('windows-1251')
 
         catalog = MapCatalog()
         for el in ET.fromstring(xml_maps):
@@ -144,13 +144,13 @@ class MapCache(object):
             size = int(el.find('Zip').attrib['Size'])
             version = int(el.find('Zip').attrib['Date'])
 
-            if country_name == u' Программа' or city_name == u'':
-                print 'Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name)
+            if country_name == ' Программа' or city_name == '':
+                print('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
             city = geonames_provider.find_city(city_name, country_name)
             if city is None:
-                print 'Not found %s, [%s]/[%s]' % (file_name, city_name, country_name)
+                print('Not found %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
             catalog.add(
@@ -168,21 +168,18 @@ class MapCache(object):
 
     def __download_map(self, map_item):
         temp_file_path = os.path.join(self.cache_path, map_item['file'] + '.download')
+        try:
+            urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
+        except URLError:
+            sleep(1)
+            urllib.request.urlretrieve(self.service_url + map_item['file'], temp_file_path)
+
         map_file_path = os.path.join(self.cache_path, map_item['file'])
-
-        req = urllib2.urlopen(self.service_url + map_item['file'])
-        with open(temp_file_path, 'wb') as fp:
-            while True:
-                chunk = req.read(self.download_chunk_size)
-                if not chunk:
-                    break
-                fp.write(chunk)
-
         if os.path.isfile(map_file_path):
             os.remove(map_file_path)
 
         os.rename(temp_file_path, map_file_path)
-        print 'Downloaded [%s]' % (map_item['file'])
+        print('Downloaded [%s]' % map_item['file'])
 
 
 class MapPublication(object):
@@ -226,22 +223,22 @@ class MapPublication(object):
             map_file = map_info['file']
 
             if map_file in self.ignore_list:
-                print 'Map [%s] ignored.' % map_file
+                print('Map [%s] ignored.' % map_file)
                 continue
 
             old_map = old_catalog.find_by_file(map_file)
             if old_map is not None and old_map['version'] == map_info['version']:
                 published_catalog.add_map(old_map)
-                print 'Map [%s] already published.' % map_file
+                print('Map [%s] already published.' % map_file)
                 continue
 
             # noinspection PyBroadException
             try:
                 self.__import_map(cache_path, map_file, map_info)
                 published_catalog.add_map(map_info)
-                print 'Map [%s] imported.' % map_file
+                print('Map [%s] imported.' % map_file)
             except:
-                print 'Map [%s] import skipped due error %s.' % (map_file, sys.exc_info())
+                print('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
 
         published_catalog.save(self.publication_index_path)
         published_catalog.save_version(self.publication_version_path)
@@ -282,10 +279,10 @@ class MapPublication(object):
                 description.append(reader.value().replace('\\n', '\n').rstrip())
 
         if any(comments):
-            map_info['comments'] = string.join(comments, '\n').rstrip('\n')
+            map_info['comments'] = '\n'.join(comments).rstrip('\n')
 
         if any(description):
-            map_info['description'] = string.join(description, '\n').rstrip('\n')
+            map_info['description'] = '\n'.join(description).rstrip('\n')
 
     def __convert_assets(self):
         pass

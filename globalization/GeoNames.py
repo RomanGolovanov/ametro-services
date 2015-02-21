@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import codecs
 import os
 
@@ -62,7 +61,7 @@ class GeoNamesProvider(object):
                     country_cities = []
                     cities_by_country[iso] = country_cities
 
-                obj = GeoCity(long(p[0]), p[1], p[2].lower(), p[3].lower(), float(p[4]), float(p[5]), iso)
+                obj = GeoCity(int(p[0]), p[1], p[2].lower(), p[3].lower(), float(p[4]), float(p[5]), iso)
                 country_cities.append(obj)
                 cities.append(obj)
 
@@ -74,7 +73,7 @@ class GeoNamesProvider(object):
         with codecs.open(os.path.join(os.path.dirname(__file__), 'countries.dict'), encoding='utf-8') as f:
             for l in f.readlines():
                 p = l.rstrip().split(',')
-                countries.append(GeoCountry(long(p[0]), p[3], p[1], p[4]))
+                countries.append(GeoCountry(int(p[0]), p[3], p[1], p[4]))
         self.countries = countries
 
     def __find_country_by_name(self, name):

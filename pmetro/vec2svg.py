@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import string
 
 import svgwrite
@@ -49,7 +48,7 @@ def convert_vec_to_svg(vec_file, svg_file):
     root = root_container
 
     for l in read_all_lines(vec_file):
-        line = unicode(l).strip()
+        line = l.strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
             style['pen'] = 'black'
             continue
@@ -102,7 +101,7 @@ def __vec_cmd_angle_text_out(dwg, root, text, style):
     y = float(p[4])
     pos = (x, y)
     rotate_and_shift = 'rotate(%s %s,%s) translate(0 %s)' % (-angle, x, y, font_size)
-    txt = string.join(p[5:], ' ')
+    txt = ' '.join(p[5:])
     if txt.endswith(' 1'):
         txt = txt[:-2]
         font_weight = 'bold'
@@ -180,7 +179,7 @@ def __vec_cmd_stairs(dwg, root, text, style):
     step_length = 4
     path_vec = vector_sub(target, start)
     step_vec = vector_mul_s(path_vec, step_length / vector_mod(path_vec))
-    step_count = int(vector_mod(path_vec)) / step_length + 1
+    step_count = int(vector_mod(path_vec)) // step_length + 1
 
     for it in range(0, step_count):
         root.add(dwg.polyline(points=(start, end),
@@ -249,7 +248,7 @@ def __vec_cmd_railway(dwg, root, text, style):
 
         step_length = int(h1)
         step_vec = vector_mul_s(v1, step_length / vector_mod(v1))
-        step_count = int(vector_mod(v1)) / step_length + 1
+        step_count = int(vector_mod(v1)) // step_length + 1
 
         s1 = vector_mul_s(vector_left(v1), float(w1))
         s2 = vector_mul_s(vector_right(v1), (float(w2) - float(w1)) / 2)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import shutil
 from PIL import Image
@@ -30,11 +29,11 @@ def convert_files(dst_path, src_path):
         src_file_ext = src_file_path[-3:]
         if src_file_ext in file_converters:
             dst_file_path = os.path.join(dst_path, src_name[:-3] + file_converters[src_file_ext][1])
-            print 'Convert %s' % src_file_path
+            print('Convert %s' % src_file_path)
             file_converters[src_file_ext][0](src_file_path, dst_file_path)
         else:
             dst_file_path = os.path.join(dst_path, src_name)
-            print 'Copy %s' % src_file_path
+            print('Copy %s' % src_file_path)
             shutil.copy(src_file_path, dst_file_path)
 
 
