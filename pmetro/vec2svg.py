@@ -1,4 +1,5 @@
-import string
+import codecs
+import json
 
 import svgwrite
 
@@ -8,13 +9,17 @@ from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, ve
     vector_left, vector_right
 from pmetro.log import EmptyLog
 
+
 __MAP_EDGE_SIZE = 50
+__FONT_WIDTH = 0.3
+__FONT_HEIGHT = 0.9
 
 
 def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
     style = {
         'brush': 'none',
         'pen': 'none',
+        'text-color': 'none',
         'opaque': 100,
         'size': (0, 0),
         'rect': (0, 0, 0, 0),
@@ -34,12 +39,14 @@ def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
         'spline': __vec_cmd_spline,
         'polygon': __vec_cmd_polygon,
         'angletextout': __vec_cmd_angle_text_out,
+        'textout': __vec_cmd_text_out,
         'stairs': __vec_cmd_stairs,
         'arrow': __vec_cmd_arrow,
         'dashed': __vec_cmd_line_dashed,
         'railway': __vec_cmd_railway,
-        'ellipse': __vec_cmd_ellipse
-        # 'image,' 'railway', 'ellipse', 'textout', 'spotrect', 'spotcircle
+        'ellipse': __vec_cmd_ellipse,
+        'spotrect': __vec_cmd_empty,
+        'spotcircle': __vec_cmd_empty,
     }
 
     dwg = svgwrite.Drawing(profile='tiny')
@@ -47,12 +54,13 @@ def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
     dwg.add(root_container)
     root = root_container
 
-    line_index = 0;
+    line_index = 0
     for l in read_all_lines(vec_file):
         line_index += 1
         line = l.strip()
         if line is None or len(line) == 0 or line.startswith(';') or not (' ' in line):
-            style['pen'] = 'black'
+            style['pen'] = '#000'
+            style['text-color'] = '#FFF'
             continue
 
         space_index = line.index(' ')
@@ -60,7 +68,7 @@ def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
         txt = line[space_index:].strip()
 
         if cmd not in commands and cmd not in container_commands:
-            log.debug('Unknown command %s in file %s at line %s' % (cmd, vec_file, line_index-1))
+            log.debug('Unknown command %s in file %s at line %s' % (cmd, vec_file, line_index - 1))
             continue
 
         if cmd in container_commands:
@@ -68,13 +76,17 @@ def convert_vec_to_svg(vec_file, svg_file, log=EmptyLog()):
         else:
             commands[cmd](dwg, root, txt, style)
 
-    w, h = style['size']
     x0, y0, x1, y1 = style['rect']
+    w, h = style['size']
     dwg.attribs['width'] = '%spx' % int(x1 - x0 + __MAP_EDGE_SIZE * 2)
     dwg.attribs['height'] = '%spx' % int(y1 - y0 + __MAP_EDGE_SIZE * 2)
     root_container.attribs['transform'] = 'translate(%s,%s)' % ( -x0 + __MAP_EDGE_SIZE, -y0 + __MAP_EDGE_SIZE )
 
     dwg.saveas(svg_file)
+
+    meta = {'width': w, 'height': h, 'dx': x0 - __MAP_EDGE_SIZE, 'dy': y0 - __MAP_EDGE_SIZE}
+    with codecs.open(svg_file + '.meta', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(meta, ensure_ascii=False, indent=True))
 
 
 def __vec_cmd_size(dwg, root, text, style):
@@ -90,6 +102,30 @@ def __vec_cmd_angle(dwg, root, text, style):
     new_root = dwg.g(transform=rotate)
     root.add(new_root)
     return new_root
+
+
+def __vec_cmd_text_out(dwg, root, text, style):
+    p = as_list(text.strip('\''))
+    font_style = p[0]
+    font_size = int(p[1])
+    font_weight = 'normal'
+    x = float(p[2])
+    y = float(p[3])
+    pos = (x - font_size * __FONT_WIDTH / 2, y + font_size*__FONT_HEIGHT)
+    txt = ' '.join(p[4:])
+    if txt.endswith(' 1'):
+        txt = txt[:-2]
+        font_weight = 'bold'
+    txt = txt.strip('\'')
+
+    __update_bounding_box((pos, vector_add(pos, (font_size * len(text) * __FONT_WIDTH, 0))), style)
+    root.add(dwg.text(text=txt,
+                      insert=pos,
+                      font_family=font_style,
+                      font_size=font_size,
+                      font_weight=font_weight,
+                      fill=style['text-color'],
+                      opacity=style['opaque']))
 
 
 def __vec_cmd_angle_text_out(dwg, root, text, style):
@@ -115,7 +151,7 @@ def __vec_cmd_angle_text_out(dwg, root, text, style):
                       font_size=font_size,
                       font_weight=font_weight,
                       transform=rotate_and_shift,
-                      fill=style['pen'],
+                      fill=style['text-color'],
                       opacity=style['opaque']))
 
 
@@ -171,6 +207,7 @@ def __vec_cmd_brush_color(dwg, root, text, style):
 
 def __vec_cmd_pen_color(dwg, root, text, style):
     style['pen'] = as_rgb(text)
+    style['text-color'] = as_rgb(text)
 
 
 def __vec_cmd_stairs(dwg, root, text, style):
@@ -200,7 +237,7 @@ def __vec_cmd_arrow(dwg, root, text, style):
     start = pts[len(pts) - 2]
     end = pts[len(pts) - 1]
 
-    angle = 20
+    angle = 15
     v = vector_mul_s(vector_sub(start, end), 0.3)
 
     left_side = vector_add(vector_rotate(v, angle), end)
@@ -283,6 +320,9 @@ def __vec_cmd_railway(dwg, root, text, style):
             right = vector_add(right, step_vec)
 
 
+def __vec_cmd_empty(dwg, root, text, style):
+    pass
+
 def __update_bounding_box(points, style):
     w, h = style['size']
     angle = style['angle']
@@ -303,4 +343,5 @@ def __update_bounding_box(points, style):
             y1 = y
 
     style['rect'] = (x0, y0, x1, y1)
+
 
