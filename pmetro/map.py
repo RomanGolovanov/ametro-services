@@ -5,7 +5,8 @@ from PIL import Image
 from pmetro.log import EmptyLog
 from pmetro.vec2svg import convert_vec_to_svg
 
-__IGNORED_FILE_TYPES = ['pm3d','pms']
+__IGNORED_FILE_TYPES = ['pm3d', 'pms']
+
 
 def convert_map(src_path, dst_path, log=EmptyLog()):
     if not os.path.isdir(dst_path):
@@ -30,7 +31,6 @@ def convert_descriptions(src_path, dst_path, log=EmptyLog()):
 
 
 def convert_static_files(dst_path, src_path, log=EmptyLog()):
-
     file_converters = {
         'vec': (convert_vec_to_svg, 'svg'),
         'bmp': (lambda src, dst, log: Image.open(src).save(dst), 'png'),

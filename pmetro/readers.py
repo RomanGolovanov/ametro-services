@@ -1,4 +1,8 @@
+import os
 from pmetro.files import read_all_lines
+from pmetro.log import ConsoleLog
+
+LOG = ConsoleLog()
 
 
 class IniReader(object):
@@ -40,5 +44,68 @@ class IniReader(object):
 
     def value(self):
         return self.lines[self.position].strip().split('=')[1]
+
+
+def deserialize_ini(file_path):
+    pos = 0
+    obj = {}
+    default_section = {}
+    section = default_section
+    for line in read_all_lines(file_path):
+        pos += 1
+
+        line = str(line).strip().replace('\\n', '\n')
+        cleaned = line.lower()
+
+        if len(cleaned) == 0:
+            continue
+
+        if cleaned.startswith('[') and cleaned.endswith(']'):
+            name = line.strip('[').strip(']').strip()
+            if len(name) == 0:
+                continue
+
+            section = {}
+            obj[name] = section
+            continue
+
+        if '=' in cleaned:
+            index = cleaned.index('=')
+            name = line[:index].strip()
+            value = line[index + 1:].strip()
+            if name in section:
+                section[name] = section[name] + '\n' + value
+            else:
+                section[name] = value
+            continue
+
+        LOG.warning('Invalid text [%s] at line %s in %s' % (line.replace('\n', ''), pos - 1, file_path))
+
+    if any(default_section.keys()):
+        obj['__Default__'] = default_section
+
+    return obj
+
+
+def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
+    section = get_ini_section(ini_obj, section_name)
+    if section is None or prop_name not in section:
+        return default_value
+    return section[prop_name]
+
+
+def get_ini_section(ini_obj, section_name):
+    if section_name not in ini_obj:
+        return None
+    return ini_obj[section_name]
+
+
+def get_ini_sections(ini_obj, section_name_prefix):
+    sections = []
+    for name in ini_obj:
+        if str(name).startswith(section_name_prefix):
+            sections.append(name)
+    return  sections
+
 
 

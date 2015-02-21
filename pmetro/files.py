@@ -27,7 +27,16 @@ def find_file_by_extension(path, file_ext):
     for file_name in os.listdir(path):
         if file_name.lower().endswith(file_ext):
             return os.path.join(path, file_name)
+    raise FileNotFoundError('File with extension %s not found into %s' % (file_ext, path))
 
+
+def find_files_by_extension(path, file_ext):
+    file_ext = file_ext.lower()
+    file_list = []
+    for file_name in os.listdir(path):
+        if file_name.lower().endswith(file_ext):
+            file_list.append(os.path.join(path, file_name))
+    return file_list
 
 def read_all_lines(source_file_path):
     source_formats = ['windows-1251', 'iso-8859-1', 'ascii']
@@ -42,3 +51,16 @@ def read_all_lines(source_file_path):
             pass
 
     raise IOError("Error: failed to read all lines from '" + source_file_path + "'.")
+
+
+def get_file_name(path):
+    head, tail = os.path.split(path)
+    return tail
+
+
+def get_file_name_without_ext(path):
+    file_name = get_file_name(path)
+    if '.' not in file_name:
+        return file_name
+    last_dot_index = file_name.rindex('.')
+    return file_name[:last_dot_index]

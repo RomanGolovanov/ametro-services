@@ -262,6 +262,7 @@ class MapCache(object):
     def __extract_map_info(map_folder, map_item):
         reader = IniReader()
         reader.open(find_file_by_extension(map_folder, '.cty'))
+
         reader.section('Options')
 
         map_id = uuid.uuid1().hex
