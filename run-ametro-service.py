@@ -1,6 +1,7 @@
 # /usr/bin/env python3
 import datetime
 import os
+from pmetro import readers
 
 FORCE_UPDATE=False
 
@@ -20,6 +21,8 @@ log = CompositeLog([
     FileLog(file_path='import.verbose.log', level=LogLevel.Debug),
     FileLog(file_path='import.log', level=LogLevel.Warning)
 ])
+
+readers.LOG = log
 
 log.info('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
