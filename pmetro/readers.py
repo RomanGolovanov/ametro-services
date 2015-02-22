@@ -87,6 +87,18 @@ def deserialize_ini(file_path):
     return obj
 
 
+def get_ini_attr_bool(ini, section_name, prop_name, default_value=None):
+    return bool(get_ini_attr(ini, section_name, prop_name, default_value))
+
+
+def get_ini_attr_int(ini, section_name, prop_name, default_value=None):
+    return int(get_ini_attr(ini, section_name, prop_name, default_value))
+
+
+def get_ini_attr_float(ini, section_name, prop_name, default_value=None):
+    return float(get_ini_attr(ini, section_name, prop_name, default_value))
+
+
 def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
     section = get_ini_section(ini_obj, section_name)
     if section is None or prop_name not in section:

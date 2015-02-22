@@ -65,3 +65,10 @@ def get_file_name_without_ext(path):
     last_dot_index = file_name.rindex('.')
     return file_name[:last_dot_index]
 
+
+def get_file_ext(path):
+    file_name = get_file_name(path)
+    if '.' not in file_name:
+        return None
+    last_dot_index = file_name.rindex('.')
+    return file_name[last_dot_index+1:]

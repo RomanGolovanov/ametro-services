@@ -2,6 +2,8 @@
 import datetime
 import os
 from pmetro import readers
+from pmetro import model_transports
+from pmetro import model_maps
 
 FORCE_UPDATE = False
 
@@ -23,6 +25,8 @@ log = CompositeLog([
 ])
 
 readers.LOG = log
+model_transports.LOG = log
+model_maps.LOG = log
 
 log.info('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 

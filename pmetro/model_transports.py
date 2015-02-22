@@ -1,8 +1,11 @@
 import os
 from pmetro.files import find_files_by_extension, get_file_name_without_ext
 from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay
+from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapTransport, MapTransportLine
 from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
+
+LOG = ConsoleLog()
 
 
 def load_transports(map_container, path):
@@ -23,7 +26,11 @@ def load_transport(path):
     ini = deserialize_ini(path)
     transport = MapTransport()
     transport.name = get_file_name_without_ext(path)
-    transport.type = get_ini_attr(ini, 'Options', 'Type', 'Метро')
+    transport.type = get_ini_attr(ini, 'Options', 'Type', None)
+    if transport.type is None:
+        transport.type = 'Метро'
+        LOG.info('Empty transport type for map %s.trp in %s' % (transport.name, path))
+
     transport.lines = __load_transport_lines(ini)
     transport.transfers = __load_transfers(ini)
     return transport
@@ -225,7 +232,6 @@ def __is_segment_not_exists(segments, segment):
 
 
 def __get_segment_from_to(stations, from_station, to_station):
-
     if from_station is not None:
         from_station = stations.index(from_station)
     else:

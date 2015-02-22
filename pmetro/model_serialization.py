@@ -10,12 +10,12 @@ class MapEncoder(JSONEncoder):
 
 
 def as_json(map_container):
-    return json.dumps(map_container, ensure_ascii=False, cls=MapEncoder)
+    return json.dumps(map_container, ensure_ascii=False, cls=MapEncoder, indent=4)
 
 
-def save_model(map_info, map_container, dst_path):
-    with codecs.open(os.path.join(dst_path, 'city.json'), 'w', encoding='utf-8') as f:
-        f.write(as_json(map_info))
-    with codecs.open(os.path.join(dst_path, 'map.json'), 'w', encoding='utf-8') as f:
+def store_model(map_container, dst_path):
+    with codecs.open(os.path.join(dst_path, 'meta.json'), 'w', encoding='utf-8') as f:
+        f.write(as_json(map_container.meta))
+    with codecs.open(os.path.join(dst_path, 'main.json'), 'w', encoding='utf-8') as f:
         f.write(as_json(map_container))
 
