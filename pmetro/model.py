@@ -149,9 +149,7 @@ def load_lines(ini):
     return lines
 
 
-
 def load_line_segments(stations_text, drivings_text, aliases_text):
-
     stations_iter = StationsString(stations_text)
     delays_iter = DelaysString(drivings_text)
 
@@ -167,10 +165,10 @@ def load_line_segments(stations_text, drivings_text, aliases_text):
     this_station = stations_iter.next()
 
     while True:
-        if stations_iter.next_separator == '':
+        if stations_iter.next_separator == '(':
             idx = 0
             delays = delays_iter.next_block()
-            while stations_iter.has_next() and stations_iter.next_separator!=')':
+            while stations_iter.has_next() and stations_iter.next_separator != ')':
                 is_forward = True
 
                 bracketed_station_name = stations_iter.next()
@@ -178,7 +176,7 @@ def load_line_segments(stations_text, drivings_text, aliases_text):
                     bracketed_station_name = bracketed_station_name[1:]
                     is_forward = not is_forward
 
-                if bracketed_station_name is not None and len(bracketed_station_name)>0:
+                if bracketed_station_name is not None and len(bracketed_station_name) > 0:
                     if idx < len(delays):
                         delay = delays[idx]
                     else:
@@ -214,14 +212,14 @@ def load_line_segments(stations_text, drivings_text, aliases_text):
             this_from_segment = MapSegment(this_station, from_station, from_delay)
             this_to_segment = MapSegment(this_station, to_station, to_delay)
 
-            if from_station is not None and not(this_from_segment in segments):
+            if from_station is not None and not (this_from_segment in segments):
                 if from_delay is None:
                     opposite_segment = MapSegment(from_station, this_station, None)
                     for si in segments:
                         if opposite_segment == si:
                             this_from_segment.delay = si.delay
                 segments.append(this_from_segment)
-            if to_station is not None and not(this_to_segment in segments):
+            if to_station is not None and not (this_to_segment in segments):
                 segments.append(this_to_segment)
 
             from_station = this_station
@@ -232,9 +230,9 @@ def load_line_segments(stations_text, drivings_text, aliases_text):
             this_station = to_station
             to_station = None
 
-            if not(stations_iter.has_next()):
+            if not (stations_iter.has_next()):
                 this_from_segment = MapSegment(this_station, from_station, from_delay)
-                if from_station is not None and not(this_from_segment in segments):
+                if from_station is not None and not (this_from_segment in segments):
                     if from_delay is None:
                         opposite_segment = MapSegment(from_station, this_station, None)
                         for si in segments:
@@ -242,7 +240,7 @@ def load_line_segments(stations_text, drivings_text, aliases_text):
                                 this_from_segment.delay = si.delay
                     segments.append(this_from_segment)
 
-        if not(stations_iter.has_next()):
+        if not (stations_iter.has_next()):
             break
 
     return stations, segments

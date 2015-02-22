@@ -1,4 +1,3 @@
-
 class DelaysString(object):
     def __init__(self, text):
         self.text = str(text)
@@ -21,7 +20,7 @@ class DelaysString(object):
             idx = self.pos
 
         next_comma = self.text.find(',', idx)
-        if next_comma!= -1:
+        if next_comma != -1:
             block = self.text[self.pos: next_comma]
             self.pos = next_comma + 1
         else:
@@ -42,7 +41,7 @@ class DelaysString(object):
             minutes = int(fp)
             seconds = int((fp - minutes) * 100)
             delays.append(minutes * 60 + seconds)
-        return
+        return delays
 
 
 class StationsString:
@@ -65,8 +64,8 @@ class StationsString:
             return None
 
     def has_next(self):
+        current = self.pos
         try:
-            current = self.pos
             self.skip_to_content()
             return not self.__eof()
         finally:
@@ -84,7 +83,7 @@ class StationsString:
         quotes = False
         while current < self.len:
             symbol = self.text[current:current + 1]
-            if not (symbol not in self.separators or quotes ):
+            if not (symbol not in self.separators or quotes):
                 break
 
             if symbol == '"':
@@ -99,11 +98,10 @@ class StationsString:
         self.next_separator = symbol
         txt = self.text[self.pos: end]
         self.pos = end
-        return txt.strip('"')
-
+        return txt
 
     def skip_to_content(self):
-        symbol = symbol_next = self.at_next()
+        symbol = self.at_next()
         while self.pos < self.len and symbol in self.separators:
             if symbol == '(':
                 self.pos += 1
