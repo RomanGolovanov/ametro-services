@@ -1,21 +1,10 @@
-class MapTransfer(object):
+class MapContainer(object):
     def __init__(self):
-        self.name = ''
-        self.from_line = ''
-        self.from_station = ''
-        self.to_line = ''
-        self.to_station = ''
-        self.delay = None
-        self.state = None
-
-
-class MapLine(object):
-    def __init__(self):
-        self.id = ''
-        self.name = ''
-        self.map = ''
-        self.stations = []
-        self.segments = []
+        self.delays = []
+        self.transports = []
+        self.schemes = []
+        self.images = []
+        self.texts = []
 
 
 class MapTransport(object):
@@ -26,11 +15,26 @@ class MapTransport(object):
         self.transfers = []
 
 
-class MapContainer(object):
+class MapTransportLine(object):
     def __init__(self):
-        self.delays = []
-        self.transports = []
+        self.name = ''
+        self.alias = ''
+        self.map = ''
         self.stations = []
-        self.images = []
-        self.maps = []
-        self.texts = []
+        self.segments = []
+        self.aliases = []
+
+
+class MapScheme(object):
+    def __init__(self):
+        self.background=''
+        self.station_diameter = 1
+        self.line_width = 1
+        self.upper_case = False
+        self.word_wrap = False
+        self.is_vector = False
+        self.transports = []
+        self.default_transports = []
+
+        self.lines = []
+

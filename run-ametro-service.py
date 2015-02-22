@@ -3,7 +3,7 @@ import datetime
 import os
 from pmetro import readers
 
-FORCE_UPDATE=False
+FORCE_UPDATE = False
 
 from pmetro.catalog import MapCache, MapPublication
 from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
