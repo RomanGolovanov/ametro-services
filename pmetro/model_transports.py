@@ -139,8 +139,7 @@ def __parse_station_and_delays(stations_text, drivings_text):
                 is_forward = True
 
                 bracketed_station_name = stations_iter.next()
-                if bracketed_station_name.startswith('-'):
-                    bracketed_station_name = bracketed_station_name[1:]
+                if stations_iter.next_reverse:
                     is_forward = not is_forward
 
                 if bracketed_station_name is not None and len(bracketed_station_name) > 0:
@@ -226,6 +225,7 @@ def __is_segment_not_exists(segments, segment):
 
 
 def __get_segment_from_to(stations, from_station, to_station):
+
     if from_station is not None:
         from_station = stations.index(from_station)
     else:
@@ -290,6 +290,7 @@ class StationsString:
         self.separators = ',()'
         self.pos = 0
         self.next_separator = ''
+        self.next_reverse = False
         self.reset()
 
     def reset(self):
@@ -337,6 +338,16 @@ class StationsString:
         self.next_separator = symbol
         txt = self.text[self.pos: end]
         self.pos = end
+
+        self.next_reverse = False
+        if txt.startswith('-'):
+            self.next_reverse = True
+            txt = txt[1:]
+
+        if txt.startswith('"-'):
+            self.next_reverse = True
+            txt = '"' + txt[2:]
+
         return txt
 
     def __skip_to_content(self):
