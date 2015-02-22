@@ -32,12 +32,41 @@ def as_list(text='', splitter=','):
     return lst
 
 
+def as_float_list(text='', splitter=','):
+    if text is None or len(text) == 0:
+        return None
+
+    parts = text.split(splitter)
+    lst = []
+    for p in parts:
+        lst.append(float(p.strip()))
+    return lst
+
+
 def as_points(items):
     pts = list(items)
     points = []
     for x in range(0, len(pts) // 2):
         points.append( (float(pts[x * 2]), float(pts[x * 2 + 1])) )
     return points
+
+
+def as_delay(text):
+    if text is None or len(text.strip()) == 0:
+        return None
+    fp = float(text)
+    minutes = int(fp)
+    seconds = int((fp - minutes) * 100)
+    return minutes * 60 + seconds
+
+
+def as_delay_list(text):
+    if text is None or len(text.strip()) == 0:
+        return None
+    delays = []
+    for d in as_list(text):
+        delays.append(as_delay(d))
+    return delays
 
 
 def as_rgb(text=''):

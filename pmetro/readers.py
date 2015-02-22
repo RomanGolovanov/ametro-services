@@ -57,7 +57,7 @@ def deserialize_ini(file_path):
         line = str(line).strip().replace('\\n', '\n')
         cleaned = line.lower()
 
-        if len(cleaned) == 0:
+        if len(cleaned) == 0 or cleaned[0] == ';':
             continue
 
         if cleaned.startswith('[') and cleaned.endswith(']'):
@@ -105,7 +105,7 @@ def get_ini_sections(ini_obj, section_name_prefix):
     for name in ini_obj:
         if str(name).startswith(section_name_prefix):
             sections.append(name)
-    return  sections
+    return sections
 
 
 
