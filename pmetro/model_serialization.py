@@ -10,7 +10,7 @@ class MapEncoder(JSONEncoder):
 
 
 def as_json(map_container):
-    return json.dumps(map_container, ensure_ascii=False, indent=False, cls=MapEncoder)
+    return json.dumps(map_container, ensure_ascii=False, cls=MapEncoder)
 
 
 def save_model(map_info, map_container, dst_path):
