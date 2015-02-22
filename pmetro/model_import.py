@@ -1,7 +1,7 @@
 import os
 
 from pmetro.files import find_files_by_extension, get_file_name_without_ext
-from pmetro.helpers import as_delay_list, as_quoted_list
+from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float
 from pmetro.model_helpers import parse_station_and_delays
 from pmetro.model_objects import MapContainer, MapTransport, MapTransfer, MapLine
 from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
@@ -70,7 +70,7 @@ def load_transfers(ini):
             params = as_quoted_list(line)
             from_line, from_station, to_line, to_station = params[:4]
             if len(params) > 4:
-                delay = float(params[4])
+                delay = float(un_bugger_for_float(params[4]))
             else:
                 delay = None
 

@@ -10,12 +10,20 @@ import sys
 import xml.etree.ElementTree as ET
 
 from globalization.GeoNames import GeoNamesProvider
-from pmetro.files import unzip_file, zip_folder, find_file_by_extension
+from pmetro.files import unzip_file, zip_folder, find_file_by_extension, get_file_name_without_ext
 from pmetro.log import EmptyLog
 from pmetro.catalog_publishing import convert_map
 from pmetro.readers import IniReader
 
 DOWNLOAD_MAP_MAX_RETRIES = 5
+
+IGNORE_MAP_LIST = [
+    'Moscow3d.zip',
+    'MoscowGrd.zip',
+    'Moscow_skor.zip',
+    'Moscow_pix.zip',
+    'MoscowHistory.zip'
+]
 
 
 class MapCatalog(object):
@@ -136,14 +144,6 @@ def load_catalog(path):
 class MapCache(object):
     def __init__(self, service_url, cache_path, temp_path, log=EmptyLog()):
 
-        self.ignore_list = [
-            'Moscow3d.zip',
-            'MoscowGrd.zip',
-            'Moscow_skor.zip',
-            'Moscow_pix.zip',
-            'MoscowHistory.zip'
-        ]
-
         self.download_chunk_size = 16 * 1024
         self.service_url = service_url
         self.cache_path = cache_path
@@ -190,7 +190,7 @@ class MapCache(object):
             size = int(el.find('Zip').attrib['Size'])
             version = int(el.find('Zip').attrib['Date'])
 
-            if file_name in self.ignore_list:
+            if file_name in IGNORE_MAP_LIST:
                 self.log.info('Ignored [%s].' % file_name)
                 continue
 
@@ -230,7 +230,7 @@ class MapCache(object):
             try:
                 urllib.request.urlretrieve(self.service_url + map_file, tmp_path)
             except URLError:
-                self.log.debug('Map [%s] download error, wait and retry.' % map_file)
+                self.log.warning('Map [%s] download error, wait and retry.' % map_file)
                 sleep(0.5)
                 continue
 
@@ -336,9 +336,11 @@ class MapPublication(object):
         publication_map_path = os.path.join(self.publication_path, map_info['file'])
         temp_root = self.__create_tmp()
         try:
-            map_folder = self.__create_tmp(temp_root)
+            map_folder = os.path.join(temp_root, map_info['map_id'])
+            os.mkdir(map_folder)
             for src_zip_with_pmz in [os.path.join(cache_path, x['file']) for x in src_map_list]:
-                map_folder = self.__extract_pmz(src_zip_with_pmz, temp_root, map_folder)
+                tmp_folder = self.__extract_pmz(src_zip_with_pmz, self.__create_tmp(temp_root), self.__create_tmp(temp_root))
+                self.__move_map_files(tmp_folder, map_folder)
 
             convert_map(map_info, map_folder, map_folder + '.converted', self.log)
 
@@ -348,6 +350,16 @@ class MapPublication(object):
         finally:
             shutil.rmtree(temp_root)
 
+    def __move_map_files(self, src_path, dst_path):
+        for file_name in os.listdir(src_path):
+            src = os.path.join(src_path, file_name)
+            dst = os.path.join(dst_path, file_name)
+            if not os.path.isfile(dst):
+                shutil.move(src, dst)
+            else:
+                self.log.warning("File name %s already exists in map directory, skipped" % file_name)
+
+
     def __extract_pmz(self, src_zip_with_pmz, temp_folder, map_folder):
         extract_folder = self.__create_tmp(temp_folder)
         unzip_file(src_zip_with_pmz, extract_folder)
@@ -355,10 +367,10 @@ class MapPublication(object):
         unzip_file(pmz_file, map_folder)
         return map_folder
 
-    def __create_tmp(self, folder=None, create=True):
-        if folder is None:
-            folder = self.temp_path
-        tmp_folder = os.path.join(folder, uuid.uuid1().hex)
+    def __create_tmp(self, root_folder=None, create=True):
+        if root_folder is None:
+            root_folder = self.temp_path
+        tmp_folder = os.path.join(root_folder, uuid.uuid1().hex)
         if create:
             os.mkdir(tmp_folder)
         return tmp_folder

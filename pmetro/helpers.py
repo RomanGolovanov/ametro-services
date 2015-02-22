@@ -118,3 +118,11 @@ def as_quoted_list(line, separator=','):
         parts.append(''.join(current))
 
     return parts
+
+def un_bugger_for_float(text):
+    if text is None or len(text) == 0:
+        return None
+    text = text.strip()
+    if ' ' in text:
+        return text.split(' ')[0]
+    return text

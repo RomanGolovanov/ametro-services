@@ -34,6 +34,15 @@ class BaseLog(object):
     def debug(self, message):
         self.write(message, LogLevel.Debug)
 
+    @staticmethod
+    def log_level_text(level):
+        return {
+            LogLevel.Debug: 'Debug',
+            LogLevel.Info: 'Info',
+            LogLevel.Warning: 'Warning',
+            LogLevel.Error: 'Error',
+        }[level]
+
 
 class EmptyLog(BaseLog):
     pass
@@ -76,5 +85,7 @@ class FileLog(BaseLog):
 
     def write(self, message, level=LogLevel.Debug):
         if level >= self.level:
-            self.file.write('[%s] %s\n' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f'), message))
+            self.file.write('[%s][%s] %s\n' % (
+                datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f'), BaseLog.log_level_text(level), message))
             self.file.flush()
+
