@@ -1,13 +1,13 @@
 import os
 
 from pmetro.files import find_files_by_extension, get_file_name_without_ext
-from pmetro.helpers import as_list, as_delay_list
+from pmetro.helpers import as_delay_list, as_quoted_list
 from pmetro.model_helpers import parse_station_and_delays
 from pmetro.model_objects import MapContainer, MapTransport, MapTransfer, MapLine
 from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
 
 
-def load_map(path):
+def import_pmz_map(path):
     map_container = create_metadata(path)
     load_transports(map_container, path)
     return map_container
@@ -49,7 +49,6 @@ def load_transport(path):
     transport = MapTransport()
     transport.name = get_file_name_without_ext(path)
     transport.type = get_ini_attr(ini, 'Options', 'Type', 'Метро')
-
     transport.lines = load_lines(ini)
     transport.transfers = load_transfers(ini)
 
@@ -68,9 +67,13 @@ def load_transfers(ini):
 
         line_list = section[name].split('\n')
         for line in line_list:
-            params = as_list(line)
+            params = as_quoted_list(line)
             from_line, from_station, to_line, to_station = params[:4]
-            delay = float(params[4])
+            if len(params) > 4:
+                delay = float(params[4])
+            else:
+                delay = None
+
             if len(params) > 5:
                 state = params[5]
             else:

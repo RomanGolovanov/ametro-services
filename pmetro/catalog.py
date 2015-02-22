@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from globalization.GeoNames import GeoNamesProvider
 from pmetro.files import unzip_file, zip_folder, find_file_by_extension
 from pmetro.log import EmptyLog
-from pmetro.map import convert_map
+from pmetro.catalog_publishing import convert_map
 from pmetro.readers import IniReader
 
 DOWNLOAD_MAP_MAX_RETRIES = 5

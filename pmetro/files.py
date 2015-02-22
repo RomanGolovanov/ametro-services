@@ -1,4 +1,3 @@
-
 import codecs
 import shutil
 import os
@@ -37,6 +36,7 @@ def find_files_by_extension(path, file_ext):
         if file_name.lower().endswith(file_ext):
             file_list.append(os.path.join(path, file_name))
     return file_list
+
 
 def read_all_lines(source_file_path):
     source_formats = ['windows-1251', 'iso-8859-1', 'ascii']

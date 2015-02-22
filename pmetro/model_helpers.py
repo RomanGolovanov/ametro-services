@@ -1,4 +1,4 @@
-from pmetro.helpers import as_delay, as_delay_list
+from pmetro.helpers import as_delay, as_quoted_list
 
 
 class DelaysString(object):
@@ -33,7 +33,10 @@ class DelaysString(object):
         return block
 
     def next(self):
-        return float(self.__next_block())
+        next_value = self.__next_block()
+        if not any(next_value):
+            return None
+        return float(next_value)
 
     def next_bracket(self):
         if self.text is None:
@@ -116,11 +119,8 @@ class StationsString:
 
 
 def get_stations(stations_text):
-    stations = []
-    for s in stations_text.replace('(', ',').replace(')', ',').split(','):
-        s = s.strip()
-        if len(s) > 0:
-            stations.append(s)
+    cleared_text = stations_text.replace('(', ',').replace(')', ',')
+    stations = as_quoted_list(cleared_text)
     stations = list(set(stations))
     list.sort(stations)
     return stations
@@ -131,10 +131,11 @@ def parse_station_and_delays(stations_text, drivings_text):
     delays_iter = DelaysString(drivings_text)
 
     stations = get_stations(stations_text)
-    segments = []
 
-    to_station = ''
-    to_delay = 0
+    if len(stations) < 2 and len(drivings_text) == 0:
+        return stations, []
+
+    segments = []
 
     from_station = None
     from_delay = None
@@ -167,7 +168,6 @@ def parse_station_and_delays(stations_text, drivings_text):
             # /while
             from_station = this_station
             from_delay = None
-            to_delay = None
             if not stations_iter.has_next():
                 break
 
@@ -195,12 +195,8 @@ def parse_station_and_delays(stations_text, drivings_text):
                 segments.append(this_to_segment)
 
             from_station = this_station
-
             from_delay = to_delay
-            to_delay = None
-
             this_station = to_station
-            to_station = None
 
             if not (stations_iter.has_next()):
                 this_from_segment = create_segment(stations, this_station, from_station, from_delay)

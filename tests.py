@@ -1,7 +1,7 @@
 import codecs
 from json import JSONEncoder
 import json
-from pmetro.model import load_map
+from pmetro.model_import import import_pmz_map
 
 
 class MapEncoder(JSONEncoder):
@@ -14,4 +14,4 @@ def as_json(map_container):
 
 
 with codecs.open('test.json','w') as f:
-    f.write(as_json(load_map('TestMap', None)))
+    f.write(as_json(import_pmz_map('TestMap')))

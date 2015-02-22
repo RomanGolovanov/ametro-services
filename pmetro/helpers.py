@@ -84,3 +84,37 @@ def as_rgb(text=''):
 
     return '#' + text
 
+
+def as_quoted_list(line, separator=','):
+    if line is None or len(line) == 0:
+        return []
+
+    parts = []
+    current = []
+    length = len(line)
+    pos = 0
+
+    quoted = False
+    ch = None
+
+    while pos < length:
+        previous_ch = ch
+        ch = line[pos]
+        pos += 1
+
+        if ch == '"':
+            quoted = not quoted
+            current.append(ch)
+            continue
+
+        if quoted or ch != separator:
+            current.append(ch)
+            continue
+
+        parts.append(''.join(current))
+        current = []
+
+    if any(current):
+        parts.append(''.join(current))
+
+    return parts

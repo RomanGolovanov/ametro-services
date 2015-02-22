@@ -1,4 +1,3 @@
-import os
 from pmetro.files import read_all_lines
 from pmetro.log import ConsoleLog
 
@@ -8,7 +7,7 @@ LOG = ConsoleLog()
 class IniReader(object):
     def __init__(self):
         self.lines = []
-        self.position = None
+        self.position = 0
 
     def open(self, path):
         self.lines = read_all_lines(path)
@@ -118,6 +117,3 @@ def get_ini_sections(ini_obj, section_name_prefix):
         if str(name).startswith(section_name_prefix):
             sections.append(name)
     return sections
-
-
-
