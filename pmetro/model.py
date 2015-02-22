@@ -3,58 +3,13 @@ import os
 from pmetro.files import find_files_by_extension, get_file_name_without_ext
 from pmetro.helpers import as_list, as_delay_list
 from pmetro.model_helpers import parse_station_and_delays
-from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections
+from pmetro.model_objects import MapContainer, MapTransport, MapTransfer, MapLine
+from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
 
 
-class MapTransfer(object):
-    def __init__(self):
-        self.name = ''
-        self.from_line = ''
-        self.from_station = ''
-        self.to_line = ''
-        self.to_station = ''
-        self.delay = None
-        self.state = None
-
-
-class MapLine(object):
-    def __init__(self):
-        self.name = ''
-        self.map = ''
-
-        self.id = ''
-        self.stations = []
-        self.segments = []
-
-
-class MapTransport(object):
-    def __init__(self):
-        self.name = ''
-        self.type = ''
-        self.lines = []
-        self.transfers = []
-
-
-class MapContainer(object):
-    def __init__(self):
-        self.name = ''
-        self.comment = ''
-        self.description = ''
-        self.city = ''
-        self.country = ''
-
-        self.delays = []
-        self.transports = []
-        self.stations = []
-        self.images = []
-        self.maps = []
-        self.texts = []
-
-
-def load_map(path, map_info=None):
+def load_map(path):
     map_container = create_metadata(path)
     load_transports(map_container, path)
-
     return map_container
 
 
@@ -64,7 +19,6 @@ def split_by_commas(text):
 
 def create_metadata(path):
     metadata_files = find_files_by_extension(path, '.cty')
-
     if not any(metadata_files):
         raise FileNotFoundError('Cannot found .cty file in %s' % path)
 
@@ -72,7 +26,6 @@ def create_metadata(path):
 
     map_container = MapContainer()
     map_container.delays = split_by_commas(get_ini_attr(metadata, 'Options', 'DelayNames', 'Day,Night'))
-
     return map_container
 
 
@@ -112,16 +65,17 @@ def load_transfers(ini):
     for name in section:
         transfer = MapTransfer()
         transfer.name = name
-        params = as_list(section[name])
-        from_line, from_station, to_line, to_station = params[:4]
-        delay = float(params[4])
-        if len(params) > 5:
-            state = params[5]
-        else:
-            state = 'visible'
 
-        transfers.append((from_line, from_station, to_line, to_station, delay, state))
-
+        line_list = section[name].split('\n')
+        for line in line_list:
+            params = as_list(line)
+            from_line, from_station, to_line, to_station = params[:4]
+            delay = float(params[4])
+            if len(params) > 5:
+                state = params[5]
+            else:
+                state = 'visible'
+            transfers.append((from_line, from_station, to_line, to_station, delay, state))
     return transfers
 
 
@@ -132,7 +86,6 @@ def load_lines(ini):
 
     lines = []
     for section_name in sections:
-
         system_name = get_ini_attr(ini, section_name, 'Name')
         display_name = get_ini_attr(ini, section_name, 'Alias', system_name)
 
@@ -145,8 +98,20 @@ def load_lines(ini):
             get_ini_attr(ini, section_name, 'Driving'))
 
         line.aliases = get_ini_attr(ini, section_name, 'Aliases')
-        line.delays = as_delay_list(get_ini_attr(ini, section_name, 'Delays'))
+        line.delays = parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
         lines.append(line)
     return lines
 
 
+def parse_line_delays(delays_section):
+    delays = {}
+    if 'Delays' in delays_section:
+        default_delays = as_delay_list(delays_section['Delays'])
+        for i in range(len(default_delays)):
+            delays[str(i)] = default_delays[i]
+        del delays_section['Delays']
+
+    for name in delays_section:
+        delays[name[5:]] = delays_section[name]
+
+    return delays

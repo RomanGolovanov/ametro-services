@@ -82,6 +82,7 @@ def deserialize_ini(file_path):
         LOG.warning('Invalid text [%s] at line %s in %s' % (line.replace('\n', ''), pos - 1, file_path))
 
     if any(default_section.keys()):
+        LOG.warning('Unnamed section in %s' % file_path)
         obj['__Default__'] = default_section
 
     return obj
@@ -92,6 +93,17 @@ def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
     if section is None or prop_name not in section:
         return default_value
     return section[prop_name]
+
+
+def get_ini_attr_collection(ini_obj, section_name, prop_name_prefix):
+    section = get_ini_section(ini_obj, section_name)
+    if section is None:
+        return None
+    copy = {}
+    for attr in section:
+        if str(attr).startswith(prop_name_prefix):
+            copy[attr] = section[attr]
+    return copy
 
 
 def get_ini_section(ini_obj, section_name):

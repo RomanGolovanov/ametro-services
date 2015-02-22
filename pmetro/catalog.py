@@ -326,24 +326,24 @@ class MapPublication(object):
                 self.log.info('Map(s) [%s] imported as [%s].' % (cached_file_list, map_file))
                 published_catalog.add_map(map_info)
             except:
-                self.log.info('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
+                self.log.error('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
 
         published_catalog.save(self.publication_index_path)
         published_catalog.save_version(self.publication_version_path)
         published_catalog.save_countries(self.publication_countries_path)
 
-    def __import_maps(self, cache_path, src_map_list, dst_map):
-        publication_map_path = os.path.join(self.publication_path, dst_map['file'])
+    def __import_maps(self, cache_path, src_map_list, map_info):
+        publication_map_path = os.path.join(self.publication_path, map_info['file'])
         temp_root = self.__create_tmp()
         try:
             map_folder = self.__create_tmp(temp_root)
             for src_zip_with_pmz in [os.path.join(cache_path, x['file']) for x in src_map_list]:
                 map_folder = self.__extract_pmz(src_zip_with_pmz, temp_root, map_folder)
 
-            convert_map(map_folder, map_folder + '.converted', self.log)
+            convert_map(map_info, map_folder, map_folder + '.converted', self.log)
 
             zip_folder(map_folder + '.converted', publication_map_path)
-            dst_map['size'] = os.path.getsize(publication_map_path)
+            map_info['size'] = os.path.getsize(publication_map_path)
 
         finally:
             shutil.rmtree(temp_root)

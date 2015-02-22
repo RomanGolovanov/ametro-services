@@ -23,8 +23,8 @@ log = CompositeLog([
 
 log.info('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
-cache = MapCache(pmetro_url, cache_path, temp_path, log)
-cache.refresh(force=FORCE_UPDATE)
+#cache = MapCache(pmetro_url, cache_path, temp_path, log)
+#cache.refresh(force=FORCE_UPDATE)
 
 publication = MapPublication(publication_path, temp_path, log)
 publication.import_maps(cache_path, force=FORCE_UPDATE)

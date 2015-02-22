@@ -1,29 +1,41 @@
+import codecs
+from json import JSONEncoder
+import json
 import os
 
 from PIL import Image
 
 from pmetro.log import EmptyLog
+from pmetro.model import load_map
 from pmetro.vec2svg import convert_vec_to_svg
 
 __IGNORED_FILE_TYPES = ['pm3d', 'pms']
 
 
-def convert_map(src_path, dst_path, log=EmptyLog()):
+class MapEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__
+
+
+def as_json(map_container):
+    return json.dumps(map_container, ensure_ascii=False, indent=False, cls=MapEncoder)
+
+
+def convert_map(map_info, src_path, dst_path, log=EmptyLog()):
     if not os.path.isdir(dst_path):
         os.mkdir(dst_path)
 
-    convert_transports(src_path, dst_path, log)
-    convert_maps(src_path, dst_path, log)
+    with codecs.open(os.path.join(dst_path, 'city.json'), 'w', encoding='utf-8') as f:
+        f.write(as_json(map_info))
+
+    convert_metadata(src_path, dst_path, log)
     convert_descriptions(src_path, dst_path, log)
     convert_static_files(dst_path, src_path, log)
 
 
-def convert_transports(src_path, dst_path, log):
-    pass
-
-
-def convert_maps(src_path, dst_path, log):
-    pass
+def convert_metadata(src_path, dst_path, log):
+    with codecs.open(os.path.join(dst_path, 'map.json'), 'w', encoding='utf-8') as f:
+        f.write(as_json(load_map(src_path)))
 
 
 def convert_descriptions(src_path, dst_path, log=EmptyLog()):

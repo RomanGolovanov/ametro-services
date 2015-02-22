@@ -1,4 +1,4 @@
-from pmetro.helpers import as_delay
+from pmetro.helpers import as_delay, as_delay_list
 
 
 class DelaysString(object):
@@ -220,8 +220,6 @@ def parse_station_and_delays(stations_text, drivings_text):
 
 
 def create_segment(stations, from_station, to_station, delay):
-    if delay == '(':
-        print(delay)
     from_station, to_station = get_segment_from_to(stations, from_station, to_station)
     return from_station, to_station, delay
 
@@ -252,5 +250,6 @@ def get_segment_from_to(stations, from_station, to_station):
     else:
         to_station = None
     return from_station, to_station
+
 
 
