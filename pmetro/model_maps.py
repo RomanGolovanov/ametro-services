@@ -5,7 +5,7 @@ from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapScheme, MapSchemeLine, MapSchemeStation
-from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_attr_float, get_ini_attr_bool, get_ini_section
+from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_float, get_ini_attr_bool, get_ini_section
 
 
 LOG = ConsoleLog()

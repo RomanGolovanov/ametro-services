@@ -1,7 +1,7 @@
 # /usr/bin/env python3
 import datetime
 import os
-from pmetro import readers
+from pmetro import ini_files
 from pmetro import model_transports
 from pmetro import model_maps
 
@@ -25,7 +25,7 @@ log = CompositeLog([
     FileLog(file_path='import.errors.log', level=LogLevel.Error)
 ])
 
-readers.LOG = log
+ini_files.LOG = log
 model_transports.LOG = log
 model_maps.LOG = log
 

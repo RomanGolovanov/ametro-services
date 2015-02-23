@@ -4,7 +4,7 @@ from pmetro.files import find_files_by_extension, get_file_name_without_ext
 from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_list, as_dict
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapTransport, MapTransportLine
-from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
+from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
 
 LOG = ConsoleLog()
 

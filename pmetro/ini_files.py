@@ -5,47 +5,6 @@ from pmetro.log import ConsoleLog
 LOG = ConsoleLog()
 
 
-class IniReader(object):
-    def __init__(self):
-        self.lines = []
-        self.position = 0
-
-    def open(self, path):
-        self.lines = read_all_lines(path)
-        self.position = 0
-
-    def section(self, section):
-        index = 0
-        pattern = '[' + section + ']'
-        while index < len(self.lines):
-            if self.lines[index].strip().lower() == pattern.lower():
-                self.position = index
-                return
-            index += 1
-        raise 'No section ' + section + ' found'
-
-    def read(self):
-        if self.position is None:
-            self.position = 0
-        else:
-            self.position += 1
-
-        if self.position >= len(self.lines):
-            return False
-
-        line = self.lines[self.position].strip()
-        if line.startswith('[') and line.endswith(']'):
-            return False
-
-        return True
-
-    def name(self):
-        return self.lines[self.position].strip().lower().split('=')[0]
-
-    def value(self):
-        return self.lines[self.position].strip().split('=')[1]
-
-
 def deserialize_ini(file_path):
     pos = 0
     obj = {
@@ -82,7 +41,7 @@ def deserialize_ini(file_path):
 
             if name in section:
                 LOG.info('Duplicate property [%s] in file \'%s\' at line %s' % (name, file_path, pos-1))
-                composite_name = '__' + name + '_Composite__'
+                composite_name = __create_composite_name(name)
                 if composite_name not in section:
                     section[composite_name] = section[name]
                 section[composite_name] = section[composite_name] + '\n' + value
@@ -97,6 +56,9 @@ def deserialize_ini(file_path):
 
     return obj
 
+
+def __create_composite_name(name):
+    return '__' + name + '_COMPOSITE__'
 
 def get_ini_attr_bool(ini, section_name, prop_name, default_value=None):
     return bool(get_ini_attr(ini, section_name, prop_name, default_value))
@@ -115,6 +77,10 @@ def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
     if section is None or prop_name not in section:
         return default_value
     return section[prop_name]
+
+
+def get_ini_composite_attr(ini, section_name, prop_name, default_value=None):
+    return get_ini_attr(ini, section_name, __create_composite_name(prop_name), default_value)
 
 
 def get_ini_attr_collection(ini_obj, section_name, prop_name_prefix):

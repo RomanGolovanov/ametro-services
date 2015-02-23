@@ -3,7 +3,7 @@ from pmetro.helpers import as_list
 from pmetro.model_maps import load_schemes
 from pmetro.model_objects import MapContainer, MapMetadata
 from pmetro.model_transports import load_transports
-from pmetro.readers import deserialize_ini, get_ini_attr
+from pmetro.ini_files import deserialize_ini, get_ini_attr
 
 
 def import_pmz_map(path, map_info):

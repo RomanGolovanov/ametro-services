@@ -10,10 +10,11 @@ import sys
 import xml.etree.ElementTree as ET
 
 from globalization.GeoNames import GeoNamesProvider
-from pmetro.files import unzip_file, zip_folder, find_file_by_extension, get_file_name_without_ext
+from pmetro.files import unzip_file, zip_folder, find_file_by_extension
 from pmetro.log import EmptyLog
 from pmetro.catalog_publishing import convert_map
-from pmetro.readers import IniReader
+from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_composite_attr
+
 
 DOWNLOAD_MAP_MAX_RETRIES = 5
 
@@ -47,6 +48,9 @@ class MapCatalog(object):
             'description': None,
             'map_id': None
         })
+
+    def add_map(self, map_info):
+        self.maps.append(map_info)
 
     def save(self, path):
         with codecs.open(path, 'w', 'utf-8') as f:
@@ -96,20 +100,8 @@ class MapCatalog(object):
 
     @staticmethod
     def clone(src_map):
-        cloned_map = {
-            'id': src_map['id'],
-            'city': src_map['city'],
-            'map_id': src_map['map_id'],
-            'description': src_map['description'],
-            'comments': src_map['comments'],
-            'iso': src_map['iso'],
-            'country': src_map['country'],
-            'latitude': src_map['latitude'],
-            'longitude': src_map['longitude'],
-            'file': src_map['file'],
-            'size': src_map['size'],
-            'version': src_map['version']
-        }
+        cloned_map = {}
+        MapCatalog.copy(src_map, cloned_map)
         return cloned_map
 
     @staticmethod
@@ -159,15 +151,20 @@ class MapCache(object):
 
     def refresh(self, force=False):
         new_catalog = self.__download_map_index()
-        old_catalog = load_catalog(self.cache_index_path)
+        if force:
+            old_catalog = MapCatalog()
+        else:
+            old_catalog = load_catalog(self.cache_index_path)
 
+        cache_catalog = MapCatalog()
         for new_map in new_catalog.maps:
             old_map = old_catalog.find_by_file(new_map['file'])
             if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
                 self.__download_map(new_map)
+                cache_catalog.add(new_map)
             else:
                 self.log.info('Map [%s] already downloaded.' % new_map['file'])
-                MapCatalog.copy(old_map, new_map)
+                cache_catalog.add_map(old_map)
 
         for old_map in old_catalog.maps:
             new_map = new_catalog.find_by_file(old_map['file'])
@@ -175,7 +172,7 @@ class MapCache(object):
                 os.remove(os.path.join(self.cache_path, old_map['file']))
                 self.log.info('Map [%s] removed as obsolete.' % old_map['file'])
 
-        new_catalog.save(self.cache_index_path)
+        cache_catalog.save(self.cache_index_path)
 
     def __download_map_index(self):
         geonames_provider = GeoNamesProvider()
@@ -258,27 +255,21 @@ class MapCache(object):
         finally:
             shutil.rmtree(temp_folder)
 
-    @staticmethod
-    def __extract_map_info(map_folder, map_item):
-        reader = IniReader()
-        reader.open(find_file_by_extension(map_folder, '.cty'))
-        reader.section('Options')
+    def __extract_map_info(self, map_folder, map_item):
+        ini = deserialize_ini(find_file_by_extension(map_folder, '.cty'))
+        name = get_ini_attr(ini, 'Options', 'Name')
+        comments = get_ini_composite_attr(ini, 'Options', 'Comment')
+        authors = get_ini_composite_attr(ini, 'Options', 'MapAuthors')
 
-        map_id = uuid.uuid1().hex
-        comments = []
-        description = []
-        while reader.read():
-            if reader.name() == 'name':
-                map_id = reader.value()
-            if reader.name() == 'comment':
-                comments.append(reader.value().replace('\\n', '\n').rstrip())
-            if reader.name() == 'mapauthors':
-                description.append(reader.value().replace('\\n', '\n').rstrip())
-        map_item['map_id'] = map_id
-        if any(comments):
-            map_item['comments'] = '\n'.join(comments).rstrip('\n')
-        if any(description):
-            map_item['description'] = '\n'.join(description).rstrip('\n')
+        if name is None:
+            name = uuid.uuid1().hex
+            self.log.warning('Empty NAME map property in file \'%s\', used UID %s' % (ini['__FILE_NAME__'], name))
+
+        map_item['map_id'] = name
+        if comments is not None:
+            map_item['comments'] = comments
+        if authors is not None:
+            map_item['description'] = authors
 
 
 class MapPublication(object):
@@ -298,32 +289,33 @@ class MapPublication(object):
     def __create_map_description(map_info_list):
         lst = sorted(map_info_list, key=lambda x: x['file'])
         max_version = max([x['version'] for x in lst])
-        map_item = MapCatalog.clone(lst[0])
+        map_item = lst[0]
         map_item['version'] = max_version
         return map_item
 
     def import_maps(self, cache_path, force=False):
-        cached_catalog = load_catalog(os.path.join(cache_path, 'index.json'))
+        new_catalog = load_catalog(os.path.join(cache_path, 'index.json'))
         old_catalog = load_catalog(self.publication_index_path)
+
         published_catalog = MapCatalog()
-        for map_id in sorted(set([m['map_id'] for m in cached_catalog.maps])):
-            cached_list = cached_catalog.find_list_by_id(map_id)
+        for map_id in sorted(set([m['map_id'] for m in new_catalog.maps])):
+            cached_list = new_catalog.find_list_by_id(map_id)
             cached_file_list = [x['file'] for x in cached_list]
 
-            map_info = MapPublication.__create_map_description(cached_list)
-            map_file = map_info['file']
+            new_map = MapPublication.__create_map_description(cached_list)
+            map_file = new_map['file']
             old_map = old_catalog.find_by_file(map_file)
 
-            if not force and old_map is not None and old_map['version'] == map_info['version']:
+            if not force and old_map is not None and old_map['version'] == new_map['version']:
                 self.log.info('Maps [%s] already published as [%s].' % (cached_file_list, map_file))
-                published_catalog.add_map(map_info)
+                published_catalog.add_map(old_map)
                 continue
 
             # noinspection PyBroadException
             try:
-                self.__import_maps(cache_path, cached_list, map_info)
+                self.__import_maps(cache_path, cached_list, new_map)
                 self.log.info('Map(s) [%s] imported as [%s].' % (cached_file_list, map_file))
-                published_catalog.add_map(map_info)
+                published_catalog.add_map(new_map)
             except:
                 self.log.error('Map [%s] import skipped due error %s.' % (map_file, sys.exc_info()))
 
@@ -338,7 +330,10 @@ class MapPublication(object):
             map_folder = os.path.join(temp_root, map_info['map_id'])
             os.mkdir(map_folder)
             for src_zip_with_pmz in [os.path.join(cache_path, x['file']) for x in src_map_list]:
-                tmp_folder = self.__extract_pmz(src_zip_with_pmz, self.__create_tmp(temp_root), self.__create_tmp(temp_root))
+                tmp_folder = self.__extract_pmz(
+                    src_zip_with_pmz,
+                    self.__create_tmp(temp_root),
+                    self.__create_tmp(temp_root))
                 self.__move_map_files(tmp_folder, map_folder)
 
             convert_map(map_info, map_folder, map_folder + '.converted', self.log)
@@ -357,7 +352,6 @@ class MapPublication(object):
                 shutil.move(src, dst)
             else:
                 self.log.warning("File name %s already exists in map directory, skipped" % file_name)
-
 
     def __extract_pmz(self, src_zip_with_pmz, temp_folder, map_folder):
         extract_folder = self.__create_tmp(temp_folder)
