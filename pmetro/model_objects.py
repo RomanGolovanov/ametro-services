@@ -12,7 +12,9 @@ class MapMetadata(object):
         self.description = map_info['description']
         self.comments = map_info['comments']        
         self.delays = delays
+        self.transport_types = []
         self.transports = []
+        self.schemes = []
 
 
 class MapContainer(object):
@@ -64,3 +66,10 @@ class MapSchemeLine(object):
         self.rect = (0,0,0,0)
         self.stations = []
         self.segments = []
+
+
+class MapSchemeStation(object):
+    def __init__(self):
+        self.name = None
+        self.coord = None
+        self.rect = None

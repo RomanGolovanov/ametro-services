@@ -21,7 +21,8 @@ pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
 log = CompositeLog([
     ConsoleLog(level=LogLevel.Info),
     FileLog(file_path='import.verbose.log', level=LogLevel.Debug),
-    FileLog(file_path='import.log', level=LogLevel.Warning)
+    FileLog(file_path='import.warnings.log', level=LogLevel.Warning),
+    FileLog(file_path='import.errors.log', level=LogLevel.Error)
 ])
 
 readers.LOG = log

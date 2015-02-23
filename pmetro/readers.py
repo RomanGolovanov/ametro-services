@@ -1,3 +1,4 @@
+import uuid
 from pmetro.files import read_all_lines
 from pmetro.log import ConsoleLog
 
@@ -47,7 +48,10 @@ class IniReader(object):
 
 def deserialize_ini(file_path):
     pos = 0
-    obj = {}
+    obj = {
+        '__FILE_NAME__': file_path,
+        '__DEFAULT__': None
+    }
     default_section = {}
     section = default_section
     for line in read_all_lines(file_path):
@@ -72,17 +76,24 @@ def deserialize_ini(file_path):
             index = cleaned.index('=')
             name = line[:index].strip()
             value = line[index + 1:].strip()
+            if len(name) == 0:
+                LOG.info('No property name in file \'%s\' at line %s: [%s]' % (file_path, pos-1, line))
+                name = uuid.uuid1().hex
+
             if name in section:
-                section[name] = section[name] + '\n' + value
-            else:
-                section[name] = value
+                LOG.info('Duplicate property [%s] in file \'%s\' at line %s' % (name, file_path, pos-1))
+                composite_name = '__' + name + '_Composite__'
+                if composite_name not in section:
+                    section[composite_name] = section[name]
+                section[composite_name] = section[composite_name] + '\n' + value
+            section[name] = value
             continue
 
-        LOG.warning('Invalid text [%s] at line %s in %s' % (line.replace('\n', ''), pos - 1, file_path))
+        LOG.warning('Invalid text in file \'%s\' at line %s: [%s]' % (file_path, pos-1, line.replace('\n', '')))
 
     if any(default_section.keys()):
-        LOG.warning('Unnamed section in %s' % file_path)
-        obj['__Default__'] = default_section
+        LOG.warning('Some properties not in named section in file \'%s\'' % file_path)
+        obj['__DEFAULT__'] = default_section
 
     return obj
 

@@ -7,18 +7,7 @@ from pmetro.readers import deserialize_ini, get_ini_attr
 
 
 def import_pmz_map(path, map_info):
-    map_container = __create_container(path, map_info)
-    load_transports(map_container, path)
-    load_schemes(map_container, path)
-    __update_container_meta(map_container)
-    return map_container
 
-
-def __update_container_meta(map_container):
-    map_container.meta.transports = list(set([trp.type for trp in map_container.transports]))
-
-
-def __create_container(path, map_info):
     metadata_files = find_files_by_extension(path, '.cty')
     if not any(metadata_files):
         raise FileNotFoundError('Cannot found .cty file in %s' % path)
@@ -28,6 +17,13 @@ def __create_container(path, map_info):
 
     map_container = MapContainer()
     map_container.meta = MapMetadata(map_info, delays)
-    return map_container
 
+    load_transports(map_container, path)
+    load_schemes(map_container, path)
+
+    map_container.meta.transport_types = list(set([trp.type for trp in map_container.transports]))
+    map_container.meta.transports = list([trp.name for trp in map_container.transports])
+    map_container.meta.schemes = list([scheme.name for scheme in map_container.schemes])
+
+    return map_container
 

@@ -9,13 +9,21 @@ class MapEncoder(JSONEncoder):
         return o.__dict__
 
 
-def as_json(map_container):
-    return json.dumps(map_container, ensure_ascii=False, cls=MapEncoder, indent=4)
+def as_json(obj):
+    return json.dumps(obj, ensure_ascii=False, cls=MapEncoder)
+
+
+def write_as_json_file(obj, path):
+    with codecs.open(path, 'w', encoding='utf-8') as f:
+        f.write(as_json(obj))
 
 
 def store_model(map_container, dst_path):
-    with codecs.open(os.path.join(dst_path, 'meta.json'), 'w', encoding='utf-8') as f:
-        f.write(as_json(map_container.meta))
-    with codecs.open(os.path.join(dst_path, 'main.json'), 'w', encoding='utf-8') as f:
-        f.write(as_json(map_container))
+    write_as_json_file(map_container.meta, os.path.join(dst_path, 'index.json'))
+
+    for transport in map_container.transports:
+        write_as_json_file(transport, os.path.join(dst_path, transport.name + '.transport.json'))
+
+    for scheme in map_container.schemes:
+        write_as_json_file(scheme, os.path.join(dst_path, scheme.name + '.scheme.json'))
 

@@ -15,7 +15,7 @@ __FONT_WIDTH = 0.3
 __FONT_HEIGHT = 0.9
 
 
-def convert_vec_to_svg(vec_file, svg_file, log):
+def convert_vec_to_svg(vec_file, svg_file, log, save_meta=False):
     style = {
         'brush': 'none',
         'pen': 'none',
@@ -86,9 +86,10 @@ def convert_vec_to_svg(vec_file, svg_file, log):
 
     dwg.saveas(svg_file)
 
-    meta = {'width': w, 'height': h, 'dx': x0 - __MAP_EDGE_SIZE, 'dy': y0 - __MAP_EDGE_SIZE}
-    with codecs.open(svg_file + '.meta.json', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(meta, ensure_ascii=False))
+    if save_meta:
+        meta = {'width': w, 'height': h, 'dx': x0 - __MAP_EDGE_SIZE, 'dy': y0 - __MAP_EDGE_SIZE}
+        with codecs.open(svg_file + '.meta.json', 'w', encoding='utf-8') as f:
+            f.write(json.dumps(meta, ensure_ascii=False))
 
 
 def __vec_cmd_size(dwg, root, text, style):

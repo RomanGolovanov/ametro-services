@@ -1,12 +1,12 @@
+from array import array
 import os
 from pmetro.files import find_files_by_extension, get_file_name_without_ext
-from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay
+from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_list, as_dict
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapTransport, MapTransportLine
 from pmetro.readers import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
 
 LOG = ConsoleLog()
-
 
 def load_transports(map_container, path):
     transport_files = find_files_by_extension(path, '.trp')
@@ -17,6 +17,7 @@ def load_transports(map_container, path):
     if default_file not in transport_files:
         raise FileNotFoundError('Cannot found Metro.trp file in %s' % path)
 
+    map_container.transports = []
     map_container.transports.append(load_transport(default_file))
     for trp in [x for x in transport_files if x != default_file]:
         map_container.transports.append(load_transport(trp))
@@ -43,22 +44,23 @@ def __load_transfers(ini):
 
     transfers = []
     for name in section:
-        line_list = section[name].split('\n')
-        for line in line_list:
-            params = as_quoted_list(line)
-            from_line, from_station, to_line, to_station = params[:4]
+        if str(name).startswith('__'):
+            continue
 
-            if len(params) > 4:
-                delay = float(un_bugger_for_float(params[4]))
-            else:
-                delay = None
+        line = section[name]
+        params = as_quoted_list(line)
+        from_line, from_station, to_line, to_station = params[:4]
 
-            if len(params) > 5:
-                visibility = params[5]
-            else:
-                visibility = 'visible'
-            transfers.append((from_line, from_station, to_line, to_station, delay, visibility))
+        if len(params) > 4:
+            delay = float(un_bugger_for_float(params[4]))
+        else:
+            delay = None
 
+        if len(params) > 5:
+            visibility = params[5]
+        else:
+            visibility = 'visible'
+        transfers.append((from_line, from_station, to_line, to_station, delay, visibility))
     return transfers
 
 
@@ -80,10 +82,16 @@ def __load_transport_lines(ini):
             get_ini_attr(ini, section_name, 'Stations'),
             get_ini_attr(ini, section_name, 'Driving'))
 
-        line.aliases = get_ini_attr(ini, section_name, 'Aliases')
+        line.aliases = __parse_aliases(get_ini_attr(ini, section_name, 'Aliases'))
         line.delays = __parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
         lines.append(line)
     return lines
+
+
+def __parse_aliases(aliases_text):
+    if aliases_text is None or len(aliases_text) == 0:
+        return dict()
+    return as_dict(aliases_text)
 
 
 def __parse_line_delays(delays_section):

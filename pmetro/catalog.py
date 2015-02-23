@@ -51,12 +51,12 @@ class MapCatalog(object):
     def save(self, path):
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
-                json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False, indent=True))
+                json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False))
 
     def save_version(self, path):
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
-                json.dumps({'version': self.get_version()}, ensure_ascii=False, indent=True))
+                json.dumps({'version': self.get_version()}, ensure_ascii=False))
 
     def save_countries(self, path):
         country_iso_dict = {}
@@ -80,7 +80,7 @@ class MapCatalog(object):
         return version
 
     def get_json(self):
-        return json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False, indent=True)
+        return json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False)
 
     def find_by_file(self, file_name):
         for m in self.maps:
@@ -262,7 +262,6 @@ class MapCache(object):
     def __extract_map_info(map_folder, map_item):
         reader = IniReader()
         reader.open(find_file_by_extension(map_folder, '.cty'))
-
         reader.section('Options')
 
         map_id = uuid.uuid1().hex

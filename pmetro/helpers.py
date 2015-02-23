@@ -24,6 +24,31 @@ def as_point_list(text=''):
     return lst
 
 
+def as_int_point_list(text=''):
+    p = as_list(text)
+    lst = []
+    for x in range(0, len(p) // 2):
+        lst.append((int(p[x * 2]), int(p[x * 2 + 1])))
+    return lst
+
+
+def as_int_rect_list(text=''):
+    p = as_list(text)
+    lst = []
+    for x in range(0, len(p) // 4):
+        rect = (int(p[x * 4]), int(p[x * 4 + 1]), int(p[x * 4 + 2]), int(p[x * 4 + 3]))
+        lst.append(rect)
+    return lst
+
+
+def as_dict(text=''):
+    lst = as_quoted_list(text)
+    obj = dict()
+    for x in range(0, len(lst) // 2):
+        obj[lst[x * 2]] = lst[x * 2 + 1]
+    return obj
+
+
 def as_list(text='', splitter=','):
     parts = text.split(splitter)
     lst = []
@@ -43,11 +68,21 @@ def as_float_list(text='', splitter=','):
     return lst
 
 
+def as_int_list(text='', splitter=','):
+    if text is None or len(text) == 0:
+        return []
+    parts = text.split(splitter)
+    lst = []
+    for p in parts:
+        lst.append(int(p.strip()))
+    return lst
+
+
 def as_points(items):
     pts = list(items)
     points = []
     for x in range(0, len(pts) // 2):
-        points.append( (float(pts[x * 2]), float(pts[x * 2 + 1])) )
+        points.append((float(pts[x * 2]), float(pts[x * 2 + 1])))
     return points
 
 
@@ -118,6 +153,7 @@ def as_quoted_list(line, separator=','):
         parts.append(''.join(current))
 
     return parts
+
 
 def un_bugger_for_float(text):
     if text is None or len(text) == 0:
