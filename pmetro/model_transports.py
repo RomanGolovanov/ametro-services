@@ -1,6 +1,7 @@
+import codecs
 import os
 
-from pmetro.files import find_files_by_extension, get_file_name_without_ext, read_all_lines
+from pmetro.files import find_files_by_extension, get_file_name_without_ext
 
 from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_dict
 from pmetro.log import ConsoleLog
@@ -46,9 +47,11 @@ def load_transport(file_name, path):
 def __get_transport_type(file_name, trp_name, ini):
     if not any(__TRANSPORT_TYPE_DICT):
         assets_path = os.path.join(os.path.dirname(__file__), 'assets')
-        for line in read_all_lines(os.path.join(assets_path, 'transports.csv')):
-            _file_name, _trp_name, _trp_type = as_quoted_list(line)
-            __TRANSPORT_TYPE_DICT[_file_name + '.zip.' + _trp_name] = _trp_type
+        with codecs.open(os.path.join(assets_path, 'transports.csv'), 'rU', encoding='utf-8') as f:
+            for line in f:
+                _file_name, _trp_name, _trp_type = as_quoted_list(line)
+                __TRANSPORT_TYPE_DICT[_file_name.strip() + '.zip.' + _trp_name.strip()] = _trp_type.strip(
+                    '\r\n').strip()
 
     trp_type = get_ini_attr(ini, 'Options', 'Type', None)
     if trp_type is not None:
