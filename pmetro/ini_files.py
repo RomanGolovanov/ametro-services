@@ -22,6 +22,9 @@ def deserialize_ini(file_path):
         if len(cleaned) == 0 or cleaned[0] == ';':
             continue
 
+        if cleaned == '[]':
+            break
+
         if cleaned.startswith('[') and cleaned.endswith(']'):
             name = line.strip('[').strip(']').strip()
             if len(name) == 0:
@@ -35,20 +38,20 @@ def deserialize_ini(file_path):
             index = cleaned.index('=')
             name = line[:index].strip()
             value = line[index + 1:].strip()
-            if len(name) == 0:
-                LOG.info('No property name in file \'%s\' at line %s: [%s]' % (file_path, pos-1, line))
-                name = uuid.uuid1().hex
+        else:
+            name = line
+            value = '1'
 
-            if name in section:
-                LOG.info('Duplicate property [%s] in file \'%s\' at line %s' % (name, file_path, pos-1))
-                composite_name = __create_composite_name(name)
-                if composite_name not in section:
-                    section[composite_name] = section[name]
-                section[composite_name] = section[composite_name] + '\n' + value
-            section[name] = value
-            continue
+        if len(name) == 0:
+            name = uuid.uuid1().hex
 
-        LOG.warning('Invalid text in file \'%s\' at line %s: [%s]' % (file_path, pos-1, line.replace('\n', '')))
+        if name in section:
+            composite_name = __create_composite_name(name)
+            if composite_name not in section:
+                section[composite_name] = section[name]
+            section[composite_name] = section[composite_name] + '\n' + value
+        section[name] = value
+        continue
 
     if any(default_section.keys()):
         LOG.warning('Some properties not in named section in file \'%s\'' % file_path)

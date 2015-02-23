@@ -26,6 +26,14 @@ class MapContainer(object):
         self.texts = []
 
 
+class MapImage(object):
+    def __init__(self):
+        self.caption = ''
+        self.line = ''
+        self.station = ''
+        self.image = ''
+
+
 class MapTransport(object):
     def __init__(self):
         self.name = ''

@@ -25,18 +25,42 @@ def __convert_resources(map_container, src_path, dst_path, log):
     if not os.path.isdir(res_path):
         os.mkdir(res_path)
 
-    lines_path = os.path.join(res_path,'lines')
+    schemes_path = os.path.join(res_path,'schemes')
+    if not os.path.isdir(schemes_path):
+        os.mkdir(schemes_path)
     for scheme in map_container.schemes:
-
         converted_images = []
         for scheme_image in scheme.images:
             if scheme_image is None:
                 continue
-            if not os.path.isdir(lines_path):
-                os.mkdir(lines_path)
-            converted_file_path = __convert_static_files(src_path, scheme_image, lines_path, log)
+
+            image_path = os.path.join(src_path, scheme_image)
+            if not os.path.isfile(image_path):
+                log.error('Not found image file [%s]' % image_path)
+                continue
+
+            converted_file_path = __convert_static_files(src_path, scheme_image, schemes_path, log)
             converted_images.append(os.path.relpath(converted_file_path, dst_path))
+
         scheme.images = converted_images
+
+    images_path = os.path.join(res_path,'images')
+    if not os.path.isdir(images_path):
+        os.mkdir(images_path)
+
+    converted_images = []
+    for image in map_container.images:
+
+        image_path = os.path.join(src_path, image.image)
+        if not os.path.isfile(image_path):
+            log.error('Not found image file [%s]' % image_path)
+            continue
+
+        image.image = __convert_static_files(src_path, image.image, images_path, log)
+        converted_images.append(image)
+
+    map_container.images = converted_images
+
 
 
 def __convert_static_files(src_path, src_name, dst_path, log):
