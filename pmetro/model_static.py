@@ -22,9 +22,10 @@ def __load_images(images, caption, ini):
         if line_name == 'Options' or line_name.startswith('__'):
             continue
         for station_name in get_ini_section(ini, line_name):
-            image = MapImage()
-            image.caption = caption
-            image.line = line_name
-            image.station = station_name
-            image.image = ini[line_name][station_name]
-            images.append(image)
+            for image_file in str(ini[line_name][station_name]).split('\n'):
+                image = MapImage()
+                image.caption = caption
+                image.line = line_name
+                image.station = station_name
+                image.image = image_file
+                images.append(image)
