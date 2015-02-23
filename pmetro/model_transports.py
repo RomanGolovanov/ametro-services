@@ -1,12 +1,18 @@
-from array import array
 import os
-from pmetro.files import find_files_by_extension, get_file_name_without_ext
-from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_list, as_dict
+
+from pmetro.files import find_files_by_extension, get_file_name_without_ext, read_all_lines
+
+from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_dict
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapTransport, MapTransportLine
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
 
+
 LOG = ConsoleLog()
+
+__TRANSPORT_TYPE_DICT = {}
+__TRANSPORT_TYPE_DEFAULT = 'Метро'
+
 
 def load_transports(map_container, path):
     transport_files = find_files_by_extension(path, '.trp')
@@ -18,16 +24,16 @@ def load_transports(map_container, path):
         raise FileNotFoundError('Cannot found Metro.trp file in %s' % path)
 
     map_container.transports = []
-    map_container.transports.append(load_transport(default_file))
+    map_container.transports.append(load_transport(map_container.meta.file, default_file))
     for trp in [x for x in transport_files if x != default_file]:
-        map_container.transports.append(load_transport(trp))
+        map_container.transports.append(load_transport(map_container.meta.map_id, trp))
 
 
-def load_transport(path):
+def load_transport(file_name, path):
     ini = deserialize_ini(path)
     transport = MapTransport()
     transport.name = get_file_name_without_ext(path)
-    transport.type = get_ini_attr(ini, 'Options', 'Type', None)
+    transport.type = __get_transport_type(file_name, transport.name, ini)
     if transport.type is None:
         transport.type = 'Метро'
         LOG.info('Empty transport type for map %s.trp in %s' % (transport.name, path))
@@ -35,6 +41,25 @@ def load_transport(path):
     transport.lines = __load_transport_lines(ini)
     transport.transfers = __load_transfers(ini)
     return transport
+
+
+def __get_transport_type(file_name, trp_name, ini):
+    if not any(__TRANSPORT_TYPE_DICT):
+        assets_path = os.path.join(os.path.dirname(__file__), 'assets')
+        for line in read_all_lines(os.path.join(assets_path, 'transports.csv')):
+            _file_name, _trp_name, _trp_type = as_quoted_list(line)
+            __TRANSPORT_TYPE_DICT[_file_name + '.zip.' + _trp_name] = _trp_type
+
+    trp_type = get_ini_attr(ini, 'Options', 'Type', None)
+    if trp_type is not None:
+        return trp_type
+
+    dict_id = file_name + '.' + trp_name
+    if dict_id in __TRANSPORT_TYPE_DICT:
+        return __TRANSPORT_TYPE_DICT[dict_id]
+    else:
+        LOG.error('Unknown transport type for \'%s.trp\' in \'%s\', used defaults' % (trp_name, file_name))
+        return __TRANSPORT_TYPE_DEFAULT
 
 
 def __load_transfers(ini):

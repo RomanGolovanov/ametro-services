@@ -41,12 +41,15 @@ def __load_map(src_path, scheme_file_path, line_index):
     scheme = MapScheme()
     scheme.name = get_file_name_without_ext(scheme_file_path)
 
-    image_file = get_ini_attr(ini, 'Options', 'ImageFileName', None)
-    scheme.image = image_file
-    if not os.path.isfile(os.path.join(src_path, scheme.image)):
-        LOG.error('Not found file [%s] references in [%s], ignored' % (
-            os.path.join(src_path, scheme.image), scheme_file_path))
-        scheme.image = None
+    scheme.images = []
+
+    for image_file in as_quoted_list(get_ini_attr(ini, 'Options', 'ImageFileName', '')):
+        image_file = image_file.strip()
+        image_file_path = os.path.join(src_path, image_file)
+        if os.path.isfile(image_file_path):
+            scheme.images.append(image_file)
+        else:
+            LOG.error('Not found file [%s] references in [%s], ignored' % (image_file_path, scheme_file_path))
 
     scheme.stations_diameter = get_ini_attr_float(ini, 'Options', 'StationDiameter', __DEFAULT_STATIONS_DIAMETER)
     scheme.upper_case = get_ini_attr_bool(ini, 'Options', 'UpperCase', True)

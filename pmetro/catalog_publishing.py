@@ -26,13 +26,17 @@ def __convert_resources(map_container, src_path, dst_path, log):
         os.mkdir(res_path)
 
     lines_path = os.path.join(res_path,'lines')
-    for s in map_container.schemes:
-        if s.image is None:
-            continue
-        if not os.path.isdir(lines_path):
-            os.mkdir(lines_path)
-        converted_file_path = __convert_static_files(src_path, s.image, lines_path, log)
-        s.image = os.path.relpath(converted_file_path, dst_path)
+    for scheme in map_container.schemes:
+
+        converted_images = []
+        for scheme_image in scheme.images:
+            if scheme_image is None:
+                continue
+            if not os.path.isdir(lines_path):
+                os.mkdir(lines_path)
+            converted_file_path = __convert_static_files(src_path, scheme_image, lines_path, log)
+            converted_images.append(os.path.relpath(converted_file_path, dst_path))
+        scheme.images = converted_images
 
 
 def __convert_static_files(src_path, src_name, dst_path, log):

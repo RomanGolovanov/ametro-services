@@ -46,7 +46,7 @@ class MapTransportLine(object):
 
 class MapScheme(object):
     def __init__(self):
-        self.image = ''
+        self.images = []
         self.stations_diameter = 11
         self.upper_case = True
         self.word_wrap = True

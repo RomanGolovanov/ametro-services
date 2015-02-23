@@ -1,6 +1,6 @@
 from pmetro.files import find_files_by_extension
 from pmetro.helpers import as_list
-from pmetro.model_maps import load_schemes
+from pmetro.model_schemes import load_schemes
 from pmetro.model_objects import MapContainer, MapMetadata
 from pmetro.model_transports import load_transports
 from pmetro.ini_files import deserialize_ini, get_ini_attr
