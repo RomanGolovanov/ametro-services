@@ -21,9 +21,17 @@ def write_as_json_file(obj, path):
 def store_model(map_container, dst_path):
     write_as_json_file(map_container.meta, os.path.join(dst_path, 'index.json'))
 
+    transports_path = os.path.join(dst_path, 'transports')
+    if not os.path.isdir(transports_path):
+        os.mkdir(transports_path)
+
     for transport in map_container.transports:
-        write_as_json_file(transport, os.path.join(dst_path, transport.name + '.transport.json'))
+        write_as_json_file(transport, os.path.join(transports_path, transport.name + '.json'))
+
+    schemes_path = os.path.join(dst_path, 'schemes')
+    if not os.path.isdir(schemes_path):
+        os.mkdir(schemes_path)
 
     for scheme in map_container.schemes:
-        write_as_json_file(scheme, os.path.join(dst_path, scheme.name + '.scheme.json'))
+        write_as_json_file(scheme, os.path.join(schemes_path, scheme.name + '.json'))
 
