@@ -314,7 +314,7 @@ class DelaysString(object):
         next_value = self.__next_block()
         if not any(next_value):
             return None
-        return float(next_value)
+        return as_delay(next_value)
 
     def next_bracket(self):
         if self.text is None:

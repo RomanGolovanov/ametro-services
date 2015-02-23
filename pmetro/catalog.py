@@ -161,7 +161,7 @@ class MapCache(object):
             old_map = old_catalog.find_by_file(new_map['file'])
             if old_map is None or old_map['version'] < new_map['version'] or old_map['size'] != new_map['size']:
                 self.__download_map(new_map)
-                cache_catalog.add(new_map)
+                cache_catalog.add_map(new_map)
             else:
                 self.log.info('Map [%s] already downloaded.' % new_map['file'])
                 cache_catalog.add_map(old_map)
