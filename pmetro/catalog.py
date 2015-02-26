@@ -9,7 +9,7 @@ import uuid
 import sys
 import xml.etree.ElementTree as ET
 
-from globalization.GeoNames import GeoNamesProvider
+from globalization.provider import GeoNamesProvider
 from pmetro.files import unzip_file, zip_folder, find_file_by_extension
 from pmetro.log import EmptyLog
 from pmetro.catalog_publishing import convert_map
@@ -25,6 +25,14 @@ IGNORE_MAP_LIST = [
     'Moscow_pix.zip',
     'MoscowHistory.zip'
 ]
+
+MAP_NAME_FIX = {
+    'Athenas': 'Athens',
+    'Bonn-Koln': 'Koln',
+    'Kolkata(Calcutta)': 'Kolkata',
+    'Minneapolis - St.Paul': 'Minneapolis',
+    'Мiнск': 'Minsk'
+}
 
 
 class MapCatalog(object):
@@ -119,9 +127,6 @@ class MapCatalog(object):
         dst_map['size'] = src_map['size']
         dst_map['version'] = src_map['version']
 
-    def add_map(self, map_info):
-        self.maps.append(map_info)
-
 
 def load_catalog(path):
     catalog = MapCatalog()
@@ -195,18 +200,24 @@ class MapCache(object):
                 self.log.info('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
+            if city_name in MAP_NAME_FIX:
+                city_name = MAP_NAME_FIX[city_name]
+
             city = geonames_provider.find_city(city_name, country_name)
             if city is None:
                 self.log.info('Not found %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
 
+            self.log.debug('Recognised %s,%s,%s in [%s]/[%s]' % (
+                city.geoname_id, city.name, city.country, city_name, country_name))
+
             catalog.add(
-                city.Uid,
-                city.Name,
-                geonames_provider.get_country_name_by_iso(city.CountryIso),
-                city.CountryIso,
-                city.Latitude,
-                city.Longitude,
+                city.geoname_id,
+                city.name,
+                city.country,
+                city.iso,
+                city.latitude,
+                city.longitude,
                 file_name,
                 size,
                 version)

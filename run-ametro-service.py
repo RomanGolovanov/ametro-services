@@ -1,6 +1,7 @@
 # /usr/bin/env python3
 import datetime
 import os
+from globalization.builder import build_geonames_database
 from pmetro import ini_files
 from pmetro import model_transports
 from pmetro import model_schemes
@@ -15,6 +16,8 @@ base_dir = ''
 cache_path = os.path.join(base_dir, 'cache')
 publication_path = os.path.join(base_dir, 'www')
 temp_path = os.path.join(base_dir, 'tmp')
+
+build_geonames_database('geonames')
 
 pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
 

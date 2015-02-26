@@ -4,15 +4,21 @@ import sqlite3
 import zipfile
 
 __CREATE_CITY_TABLE_QUERY = 'CREATE TABLE city (' + \
-                            'geoname_id int, name text, ascii_name text, search_name text, latitude real, ' + \
-                            'longitude real, country_iso text, population int)'
+                            '   geoname_id int, name text, ascii_name text, search_name text, latitude real, ' + \
+                            '   longitude real, country_iso text, population int)'
+__CREATE_CITY_INDEX_QUERY = 'CREATE INDEX IX_alt_name_search ON alt_name (search_name)'
 __INSERT_CITY_TABLE_QUERY = 'INSERT INTO city VALUES (?,?,?,?,?,?,?,?)'
 
-__CREATE_COUNTRY_TABLE_QUERY = 'CREATE TABLE country (geoname_id int, iso text, name text, capital text)'
-__INSERT_COUNTRY_TABLE_QUERY = 'INSERT INTO country VALUES (?,?,?,?)'
+__CREATE_COUNTRY_TABLE_QUERY = 'CREATE TABLE country (' + \
+                               '    geoname_id int, iso text, name text, capital text, search_name text)'
+__CREATE_COUNTRY_INDEX_QUERY = 'CREATE INDEX IX_county_search ON country (search_name)'
+__INSERT_COUNTRY_TABLE_QUERY = 'INSERT INTO country VALUES (?,?,?,?,?)'
 
-__CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (geoname_id int, language text, name text)'
-__INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?)'
+__CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (geoname_id int, language text, name text, search_name text)'
+__CREATE_ALT_NAME_INDEX_QUERY = 'CREATE INDEX IX_city_search ON country (search_name)'
+__INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?,?)'
+
+
 
 __MAX_BATCH_SIZE = 10000
 
@@ -53,6 +59,12 @@ def build_geonames_database(geonames_path, force=False):
 
     __fill_table(cnn, c, geonames_path, __ALT_GEO_NAME_FILE, __parse_alt_name, set(city_ids + country_ids),
                  __INSERT_ALT_NAME_TABLE_QUERY)
+
+    c.execute(__CREATE_CITY_INDEX_QUERY)
+    c.execute(__CREATE_COUNTRY_INDEX_QUERY)
+    c.execute(__CREATE_ALT_NAME_INDEX_QUERY)
+    cnn.commit()
+
 
 
 def __fill_table(cnn, cursor, src_path, src_name, parse_func, parse_context, insert_query):
@@ -95,7 +107,12 @@ def __parse_city_record(text, context):
     geoname_id, name, ascii_name, alternate_names, latitude, longitude, feature_class, feature_code, country_code, \
     cc2, admin1_code, admin2_code, admin3_code, admin4_code, population, elevation, dem, timezone, modification_date \
         = str(text).split('\t')
-    return geoname_id, name, ascii_name, alternate_names, latitude, longitude, country_code, population
+
+    search = [name.lower(), ascii_name.lower(), alternate_names.lower()]
+
+    return geoname_id, name, ascii_name, \
+           ','.join(search), \
+           latitude, longitude, country_code, population
 
 
 def __parse_country_record(text, context):
@@ -103,7 +120,7 @@ def __parse_country_record(text, context):
     tld, currency_code, currency_name, phone, postal_code_format, postal_code_regex, \
     languages, geo_name_id, neighbours, equivalent_fips \
         = str(text).split('\t')
-    return geo_name_id, iso, name, capital
+    return geo_name_id, iso, name, capital, name.lower()
 
 
 def __parse_alt_name(text, context):
@@ -114,4 +131,4 @@ def __parse_alt_name(text, context):
         return None
     if int(geoname_id) not in context:
         return None
-    return geoname_id, language, name
+    return geoname_id, language, name, name.lower()

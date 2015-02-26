@@ -1,14 +1,36 @@
-import os
-import sqlite3
+import time
+
 from globalization.builder import build_geonames_database
+from globalization.provider import GeoNamesProvider
 
-#build_geonames_database('c:/temp/geonames', force = True)
 
-cnn = sqlite3.connect('geonames/geonames.db')
-cursor = cnn.cursor()
-cursor.execute('SELECT * FROM alt_name')
-items = cursor.fetchall()
+build_geonames_database('c:/temp/geonames', force=False)
+from pmetro.model_serialization import as_json
 
-y = [x for x in items if x[0] == 524901]
 
-print(y)
+
+p = GeoNamesProvider()
+
+t1 = time.clock()
+r = p.find_city('Алматы','')
+t2 = time.clock()
+
+print(t2 - t1)
+print(as_json(r))
+
+
+t1 = time.clock()
+r = p.find_city('Алматы','')
+t2 = time.clock()
+
+print(t2 - t1)
+print(as_json(r))
+
+
+
+t1 = time.clock()
+r = p.find_city('Алматы','')
+t2 = time.clock()
+
+print(t2 - t1)
+print(as_json(r))
