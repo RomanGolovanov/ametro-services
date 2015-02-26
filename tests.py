@@ -1,4 +1,14 @@
 import os
-from globalization.database import create_geonames_database
+import sqlite3
+from globalization.builder import build_geonames_database
 
-create_geonames_database(os.path.join(os.path.dirname(__file__), 'globalization'), 'geonames')
+#build_geonames_database('c:/temp/geonames', force = True)
+
+cnn = sqlite3.connect('geonames/geonames.db')
+cursor = cnn.cursor()
+cursor.execute('SELECT * FROM alt_name')
+items = cursor.fetchall()
+
+y = [x for x in items if x[0] == 524901]
+
+print(y)
