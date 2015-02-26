@@ -1,3 +1,4 @@
-from globalization.database import convert_geo_names_to_sqlite
+import os
+from globalization.database import create_geonames_database
 
-convert_geo_names_to_sqlite()
+create_geonames_database(os.path.join(os.path.dirname(__file__), 'globalization'), 'geonames')
