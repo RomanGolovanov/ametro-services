@@ -120,10 +120,10 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
         trp_segment = trp_line.segments[i]
         from_id = trp_segment[0]
         to_id = trp_segment[1]
-        from_station = stations[from_id]
-        to_station = stations[to_id]
+        from_pt = stations[from_id]
+        to_pt = stations[to_id]
 
-        if from_station.coord == (0, 0) or to_station.coord == (0, 0):
+        if from_pt.coord == (0, 0) or to_pt.coord == (0, 0) or from_pt.coord is None or to_pt.coord is None:
             continue
 
         nodes = __get_additional_nodes(
@@ -134,7 +134,7 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
 
         additional_points, is_spline = (nodes['points'], nodes['is_spline'])
 
-        points = list((from_station.coord,)) + additional_points + list((to_station.coord,))
+        points = list((from_pt.coord,)) + additional_points + list((to_pt.coord,))
         if is_spline:
             points = cubic_interpolate(points)
 

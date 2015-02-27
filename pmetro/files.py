@@ -72,3 +72,19 @@ def get_file_ext(path):
         return None
     last_dot_index = file_name.rindex('.')
     return file_name[last_dot_index+1:]
+
+
+def find_appropriate_file(path):
+    if os.path.isfile(path):
+        return path
+    if os.path.isdir(path):
+        return None
+
+    lowered_path = path.lower()
+    root_path = os.path.dirname(path)
+    for file in os.listdir(root_path):
+        existing_file = os.path.join(root_path, file)
+        if existing_file.lower() == lowered_path:
+            return existing_file
+
+    return None
