@@ -82,6 +82,7 @@ def find_appropriate_file(path):
 
     lowered_path = path.lower()
     root_path = os.path.dirname(path)
+
     for file in os.listdir(root_path):
         existing_file = os.path.join(root_path, file)
         if existing_file.lower() == lowered_path:

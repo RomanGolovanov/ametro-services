@@ -49,9 +49,7 @@ def __convert_resources(map_container, src_path, dst_path, log):
     converted_images = []
     for image in map_container.images:
 
-        image_path = os.path.join(src_path, image.image)
-        if not os.path.isfile(image_path):
-            log.error('Not found image file [%s]' % image_path)
+        if image.image is None:
             continue
 
         converted_file_path = __convert_static_file(src_path, image.image, images_path, log)
