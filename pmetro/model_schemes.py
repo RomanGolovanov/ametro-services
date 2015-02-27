@@ -1,6 +1,6 @@
 import os
 
-from pmetro.files import find_files_by_extension, get_file_name_without_ext
+from pmetro.files import find_files_by_extension, get_file_name_without_ext, find_appropriate_file
 from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list
 from pmetro.log import ConsoleLog
@@ -45,7 +45,7 @@ def __load_map(src_path, scheme_file_path, line_index):
 
     for image_file in as_quoted_list(get_ini_attr(ini, 'Options', 'ImageFileName', '')):
         image_file = image_file.strip()
-        image_file_path = os.path.join(src_path, image_file)
+        image_file_path = find_appropriate_file(os.path.join(src_path, image_file))
         if os.path.isfile(image_file_path):
             scheme.images.append(image_file)
         else:
