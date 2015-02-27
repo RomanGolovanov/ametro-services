@@ -77,8 +77,6 @@ def get_file_ext(path):
 def find_appropriate_file(path):
     if os.path.isfile(path):
         return path
-    if os.path.isdir(path):
-        return None
 
     lowered_path = path.lower()
     root_path = os.path.dirname(path)
@@ -88,4 +86,4 @@ def find_appropriate_file(path):
         if existing_file.lower() == lowered_path:
             return existing_file
 
-    return None
+    return path
