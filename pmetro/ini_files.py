@@ -83,7 +83,10 @@ def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
 
 
 def get_ini_composite_attr(ini, section_name, prop_name, default_value=None):
-    return get_ini_attr(ini, section_name, __create_composite_name(prop_name), default_value)
+    attr = get_ini_attr(ini, section_name, __create_composite_name(prop_name), default_value)
+    if attr is not None:
+        return attr
+    return get_ini_attr(ini, section_name, prop_name, default_value)
 
 
 def get_ini_attr_collection(ini_obj, section_name, prop_name_prefix):
