@@ -44,6 +44,6 @@ def __lower_all_names(map_container):
                 continue
             line.map = line.map.lower()
 
-    map_container.meta.transports = [x.lower() for x in map_container.meta.transports]
-    map_container.meta.schemes = [x.lower() for x in map_container.meta.schemes]
+    map_container.meta.transports = ['transports/'+ x.lower() + '.json' for x in map_container.meta.transports]
+    map_container.meta.schemes = ['schemes/' + x.lower() + '.json' for x in map_container.meta.schemes]
 
