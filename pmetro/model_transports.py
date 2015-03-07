@@ -88,7 +88,7 @@ def __load_transfers(ini):
             visibility = params[5]
         else:
             visibility = 'visible'
-        transfers.append((from_line, from_station, to_line, to_station, delay, visibility))
+        transfers.append((from_line.strip(), from_station.strip(), to_line.strip(), to_station.strip(), delay, visibility))
     return transfers
 
 
