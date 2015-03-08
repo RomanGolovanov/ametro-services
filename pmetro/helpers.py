@@ -41,6 +41,13 @@ def as_int_rect_list(text=''):
     return lst
 
 
+def as_int_rect(text=''):
+    if text is None or text.strip() == '':
+        return None
+    top, left, width, height = as_list(text)
+    return [top, left, width, height]
+
+
 def as_dict(text=''):
     lst = as_quoted_list(text)
     obj = dict()

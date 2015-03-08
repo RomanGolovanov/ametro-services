@@ -2,7 +2,7 @@ import os
 
 from pmetro.files import find_files_by_extension, get_file_name_without_ext, find_appropriate_file
 from pmetro.graphics import cubic_interpolate
-from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list
+from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list, as_int_rect
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapScheme, MapSchemeLine, MapSchemeStation
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_float, get_ini_attr_bool, get_ini_section
@@ -86,7 +86,7 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
     line.line_width = get_ini_attr(ini, name, 'Width', scheme_line_width)
     line.labels_color = get_ini_attr(ini, name, 'LabelsColor', __DEFAULT_LABEL_COLOR)
     line.labels_bg_color = get_ini_attr(ini, name, 'LabelsBColor', __DEFAULT_LABEL_BG_COLOR)
-    line.rect = get_ini_attr(ini, name, 'Rect', None)
+    line.rect = as_int_rect(get_ini_attr(ini, name, 'Rect', None))
 
     line.stations, line.segments = __load_scheme_stations(
         as_int_point_list(get_ini_attr(ini, name, 'Coordinates', '')),
