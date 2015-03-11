@@ -1,5 +1,5 @@
 class MapMetadata(object):
-    def __init__(self, map_info, delays):
+    def __init__(self, map_info):
         self.map_id = map_info['city']
         self.city = map_info['city']
         self.country = map_info['country']
@@ -11,7 +11,7 @@ class MapMetadata(object):
         self.geo_name_id = map_info['id']
         self.description = map_info['description']
         self.comments = map_info['comments']        
-        self.delays = delays
+        self.delays = []
         self.transport_types = []
         self.transports = []
         self.schemes = []
@@ -61,7 +61,6 @@ class MapScheme(object):
         self.word_wrap = True
         self.transports = []
         self.default_transports = []
-
         self.lines = []
 
 

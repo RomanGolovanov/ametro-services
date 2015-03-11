@@ -6,8 +6,6 @@ from pmetro import ini_files
 from pmetro import model_transports
 from pmetro import model_schemes
 
-FORCE_UPDATE = False
-
 from pmetro.catalog import MapCache, MapPublication
 from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
 
@@ -32,13 +30,13 @@ ini_files.LOG = log
 model_transports.LOG = log
 model_schemes.LOG = log
 
-log.info('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.error('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
 cache = MapCache(pmetro_url, cache_path, temp_path, log)
-cache.refresh(force=FORCE_UPDATE)
+cache.refresh(force=False)
 
 publication = MapPublication(publication_path, temp_path, log)
-publication.import_maps(cache_path, force=FORCE_UPDATE)
+publication.import_maps(cache_path, force=True)
 
-log.info('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.error('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 

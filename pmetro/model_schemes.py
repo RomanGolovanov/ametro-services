@@ -123,7 +123,9 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
         from_pt = stations[from_id]
         to_pt = stations[to_id]
 
-        if from_pt.coord == (0, 0) or to_pt.coord == (0, 0) or from_pt.coord is None or to_pt.coord is None:
+        if from_pt.coord is None or to_pt.coord is None \
+                or from_pt.coord == (None, None) or to_pt.coord == (None, None) \
+                or from_pt.coord == (0, 0) or to_pt.coord == (0, 0):
             continue
 
         nodes = __get_additional_nodes(
