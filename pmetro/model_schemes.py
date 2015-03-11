@@ -39,7 +39,7 @@ def load_schemes(map_container, src_path):
 def __load_map(src_path, scheme_file_path, line_index):
     ini = deserialize_ini(scheme_file_path)
     scheme = MapScheme()
-    scheme.name = get_file_name_without_ext(scheme_file_path)
+    scheme.name = get_file_name_without_ext(scheme_file_path).lower()
 
     scheme.images = []
 
@@ -58,12 +58,12 @@ def __load_map(src_path, scheme_file_path, line_index):
     transports = as_list(get_ini_attr(ini, 'Options', 'Transports', ''))
     if not any(transports):
         transports = ['Metro']
-    scheme.transports = [get_file_name_without_ext(x) for x in transports]
+    scheme.transports = [get_file_name_without_ext(x).lower() for x in transports]
 
     default_transports = as_list(get_ini_attr(ini, 'Options', 'CheckedTransports', ''))
     if not any(default_transports):
         default_transports = ['Metro']
-    scheme.default_transports = [get_file_name_without_ext(x) for x in default_transports]
+    scheme.default_transports = [get_file_name_without_ext(x).lower() for x in default_transports]
 
     scheme_line_width = get_ini_attr(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
 

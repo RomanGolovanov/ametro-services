@@ -46,7 +46,7 @@ class MapTransportLine(object):
     def __init__(self):
         self.name = ''
         self.alias = ''
-        self.map = ''
+        self.scheme = ''
         self.stations = []
         self.segments = []
         self.aliases = []

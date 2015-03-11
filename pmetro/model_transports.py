@@ -33,7 +33,7 @@ def load_transports(map_container, path):
 def load_transport(file_name, path):
     ini = deserialize_ini(path)
     transport = MapTransport()
-    transport.name = get_file_name_without_ext(path)
+    transport.name = get_file_name_without_ext(path).lower()
     transport.type = __get_transport_type(file_name, transport.name, ini)
     if transport.type is None:
         transport.type = 'Метро'
@@ -50,14 +50,14 @@ def __get_transport_type(file_name, trp_name, ini):
         with codecs.open(os.path.join(assets_path, 'transports.csv'), 'rU', encoding='utf-8') as f:
             for line in f:
                 _file_name, _trp_name, _trp_type = as_quoted_list(line)
-                __TRANSPORT_TYPE_DICT[_file_name.strip() + '.zip.' + _trp_name.strip()] = _trp_type.strip(
+                __TRANSPORT_TYPE_DICT[_file_name.lower().strip() + '.zip.' + _trp_name.lower().strip()] = _trp_type.strip(
                     '\r\n').strip()
 
     trp_type = get_ini_attr(ini, 'Options', 'Type', None)
     if trp_type is not None:
         return trp_type
 
-    dict_id = file_name + '.' + trp_name
+    dict_id = file_name.lower() + '.' + trp_name.lower()
     if dict_id in __TRANSPORT_TYPE_DICT:
         return __TRANSPORT_TYPE_DICT[dict_id]
     else:
@@ -105,7 +105,11 @@ def __load_transport_lines(ini):
         line = MapTransportLine()
         line.alias = display_name
         line.name = system_name
-        line.map = get_ini_attr(ini, section_name, 'LineMap')
+
+        line_scheme = get_ini_attr(ini, section_name, 'LineMap')
+        if line_scheme is not None:
+            line.scheme = get_file_name_without_ext(line_scheme).lower()
+
         line.stations, line.segments = __parse_station_and_delays(
             get_ini_attr(ini, section_name, 'Stations'),
             get_ini_attr(ini, section_name, 'Driving'))
