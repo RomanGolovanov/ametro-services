@@ -2,16 +2,17 @@ import os
 
 from pmetro.files import find_files_by_extension, get_file_name_without_ext, find_appropriate_file
 from pmetro.graphics import cubic_interpolate
-from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list, as_int_rect
+from pmetro.helpers import as_list, as_points, as_int_point_list, as_int_rect_list, as_quoted_list, as_int_rect, \
+    round_points_array
 from pmetro.log import ConsoleLog
 from pmetro.model_objects import MapScheme, MapSchemeLine, MapSchemeStation
-from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_float, get_ini_attr_bool, get_ini_section
+from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_float, get_ini_attr_bool, get_ini_section, \
+    get_ini_attr_int
 
 
 LOG = ConsoleLog()
 
 __DEFAULT_LINES_WIDTH = 9
-
 __DEFAULT_STATIONS_DIAMETER = 11
 
 __DEFAULT_COLOR = '000000'
@@ -19,6 +20,12 @@ __DEFAULT_LABEL_COLOR = '000000'
 __DEFAULT_LABEL_BG_COLOR = ''
 
 __SCHEME_GAP_SIZE = 100
+
+
+__ZERO_COORD = (0, 0)
+__NONE_COORD = (None, None)
+__ZERO_RECT = (0, 0, 0, 0)
+__NONE_RECT = (None, None, None, None)
 
 
 def load_schemes(map_container, src_path, global_names):
@@ -52,7 +59,7 @@ def __load_map(src_path, scheme_file_path, line_index, global_names):
         else:
             LOG.error('Not found file [%s] references in [%s], ignored' % (image_file_path, scheme_file_path))
 
-    scheme_line_width = get_ini_attr(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
+    scheme_line_width = get_ini_attr_int(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
 
     scheme.stations_diameter = get_ini_attr_float(ini, 'Options', 'StationDiameter', __DEFAULT_STATIONS_DIAMETER)
     scheme.lines_width = scheme_line_width
@@ -80,25 +87,7 @@ def __load_map(src_path, scheme_file_path, line_index, global_names):
             __load_scheme_line(
                 name, ini, line_index, scheme_line_width, additional_nodes, global_names[name]))
 
-    width = 0
-    height = 0
-    for line in scheme.lines:
-        for station in line.stations:
-            if station.coord is None:
-                continue
-            (x, y) = station.coord
-            width = max(width, x)
-            height = max(height, y)
-
-        for (from_id, to_id, points, is_working) in line.segments:
-            if points is None or not any(points):
-                continue
-            for (x, y) in points:
-                width = max(width, x)
-                height = max(height, y)
-
-    scheme.width = width + __SCHEME_GAP_SIZE
-    scheme.height = height + __SCHEME_GAP_SIZE
+    scheme.width, scheme.height = __calculate_scheme_size(scheme)
 
     return scheme
 
@@ -109,12 +98,12 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
     line.display_name = line_names['display_name']
 
     line.line_color = get_ini_attr(ini, name, 'Color', __DEFAULT_COLOR)
-    line.line_width = get_ini_attr(ini, name, 'Width', scheme_line_width)
+    line.line_width = get_ini_attr_int(ini, name, 'Width', scheme_line_width)
     line.labels_color = get_ini_attr(ini, name, 'LabelsColor', __DEFAULT_LABEL_COLOR)
     line.labels_bg_color = get_ini_attr(ini, name, 'LabelsBColor', __DEFAULT_LABEL_BG_COLOR)
     line.rect = as_int_rect(get_ini_attr(ini, name, 'Rect', None))
 
-    line.stations, line.segments = __load_scheme_stations(
+    line.stations, line.segments = __load_scheme_stations_and_segments(
         as_int_point_list(get_ini_attr(ini, name, 'Coordinates', '')),
         as_int_rect_list(get_ini_attr(ini, name, 'Rects', '')),
         line_index[name],
@@ -124,43 +113,41 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
     return line
 
 
-def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes, station_names):
+def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, additional_nodes, station_names):
     stations = __load_stations(coordinates, rectangles, station_names, trp_line)
 
     segments = dict()
     for i in range(len(trp_line.segments)):
-        trp_segment = trp_line.segments[i]
-        from_id = trp_segment[0]
-        to_id = trp_segment[1]
-        from_pt = stations[from_id]
-        to_pt = stations[to_id]
+        from_id, to_id, delay = trp_line.segments[i]
+        min_id, max_id = min(from_id, to_id), max(from_id, to_id)
 
-        if from_pt.coord is None or to_pt.coord is None \
-                or from_pt.coord == (None, None) or to_pt.coord == (None, None) \
-                or from_pt.coord == (0, 0) or to_pt.coord == (0, 0):
+        station_start = stations[from_id]
+        station_end = stations[to_id]
+
+        if station_start.coord is None or station_end.coord is None:
             continue
 
-        nodes = __get_additional_nodes(
+        if delay is not None and delay > 0:
+            is_working = True
+        else:
+            is_working = False
+
+        additional_points, is_spline = __get_additional_nodes(
             additional_nodes,
             trp_line.name,
             trp_line.stations[from_id],
             trp_line.stations[to_id])
 
-        additional_points, is_spline = (nodes['points'], nodes['is_spline'])
-
-        points = list((from_pt.coord,)) + additional_points + list((to_pt.coord,))
+        points = list((station_start.coord,)) + additional_points + list((station_end.coord,))
         if is_spline:
-            points = cubic_interpolate(points)
-
-        min_id, max_id = min(from_id, to_id), max(from_id, to_id)
+            points = round_points_array(cubic_interpolate(points))
 
         if (min_id, max_id) in segments:
-            added_segment = segments[(min_id, max_id)]
-            added_segment_points = added_segment[2]
-            if len(added_segment_points) > len(points):
-                continue
-
-        is_working = True # TODO: make a calculation!
+            added_min_id, added_max_id, added_points, added_is_working = segments[(min_id, max_id)]
+            if len(added_points) > len(points):
+                points = added_points
+            if added_is_working:
+                is_working = True
 
         segments[(min_id, max_id)] = (min_id, max_id, points, is_working)
 
@@ -169,25 +156,27 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes, 
 
 def __load_stations(coordinates, rectangles, station_names, trp_line):
     stations = []
-    coord_len = len(coordinates)
-    rect_len = len(rectangles)
     for i in range(len(trp_line.stations)):
-        station = MapSchemeStation()
         name = trp_line.stations[i]
+
+        station = MapSchemeStation()
         station.name = name
         station.display_name = station_names[name]
 
-        if i < coord_len and coordinates[i] != (0, 0):
+        if i < len(coordinates) and coordinates[i] is not None \
+                and coordinates[i] != __ZERO_COORD and coordinates[i] != __NONE_COORD:
             station.coord = coordinates[i]
         else:
             station.coord = None
 
-        if i < rect_len and rectangles[i] != (0, 0, 0, 0):
+        if i < len(rectangles) and rectangles[i] is not None \
+                and rectangles[i] != __ZERO_RECT and rectangles[i] != __NONE_RECT:
             station.rect = rectangles[i]
         else:
             station.rect = None
 
-        station.is_working = True  # TODO: make a calculation!
+        station.is_working = __is_station_working(i, trp_line.segments)
+
         stations.append(station)
     return stations
 
@@ -195,7 +184,7 @@ def __load_stations(coordinates, rectangles, station_names, trp_line):
 def __get_additional_nodes(nodes, line, station_from, station_to):
     key = '%s,%s,%s' % (line, station_from, station_to)
     if key not in nodes:
-        return dict(points=list(), is_spline=False)
+        return list(), False
     return nodes[key]
 
 
@@ -219,8 +208,28 @@ def __load_additional_nodes(ini):
         points = as_points(parts[3:])
 
         key = '%s,%s,%s' % (line, station_from, station_to)
-        obj[key] = dict(points=points, is_spline=is_spline)
+        obj[key] = (points, is_spline)
     return obj
+
+
+def __calculate_scheme_size(scheme):
+    width = 0
+    height = 0
+    for line in scheme.lines:
+        for station in line.stations:
+            if station.coord is None:
+                continue
+            (x, y) = station.coord
+            width = max(width, int(x))
+            height = max(height, int(y))
+
+        for (from_id, to_id, points, is_working) in line.segments:
+            if points is None or not any(points):
+                continue
+            for (x, y) in points:
+                width = max(width, int(x))
+                height = max(height, int(y))
+    return height + __SCHEME_GAP_SIZE, width + __SCHEME_GAP_SIZE
 
 
 def __create_line_index(map_container):
@@ -235,3 +244,12 @@ def __get_display_name(name, aliases):
     if name in aliases:
         return aliases[name]
     return name
+
+
+def __is_station_working(station_id, segments):
+    for from_id, to_id, delay in segments:
+        if station_id in (from_id, to_id) and delay is not None and delay > 0:
+            return True
+    return False
+
+

@@ -169,3 +169,17 @@ def un_bugger_for_float(text):
     if ' ' in text:
         return text.split(' ')[0]
     return text
+
+
+def round_float(value):
+    return float("{0:.2f}".format(value))
+
+
+def round_point(value):
+    x, y = value
+    return round_float(x), round_float(y)
+
+
+def round_points_array(value):
+    return [round_point(p) for p in value]
+
