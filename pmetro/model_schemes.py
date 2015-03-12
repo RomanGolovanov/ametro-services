@@ -125,26 +125,7 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
 
 
 def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes, station_names):
-    stations = []
-    coord_len = len(coordinates)
-    rect_len = len(rectangles)
-    for i in range(len(trp_line.stations)):
-        station = MapSchemeStation()
-        name = trp_line.stations[i]
-        station.name = name
-        station.display_name = station_names[name]
-        if i < coord_len and coordinates[i] != (0, 0):
-            station.coord = coordinates[i]
-        else:
-            station.coord = None
-
-        if i < rect_len and rectangles[i] != (0, 0, 0, 0):
-            station.rect = rectangles[i]
-        else:
-            station.rect = None
-
-        station.is_working = True # TODO: make a calculation!
-        stations.append(station)
+    stations = __load_stations(coordinates, rectangles, station_names, trp_line)
 
     segments = dict()
     for i in range(len(trp_line.segments)):
@@ -186,6 +167,31 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes, 
     return [x for x in stations if x.coord is not None], list(sorted(segments.values()))
 
 
+def __load_stations(coordinates, rectangles, station_names, trp_line):
+    stations = []
+    coord_len = len(coordinates)
+    rect_len = len(rectangles)
+    for i in range(len(trp_line.stations)):
+        station = MapSchemeStation()
+        name = trp_line.stations[i]
+        station.name = name
+        station.display_name = station_names[name]
+
+        if i < coord_len and coordinates[i] != (0, 0):
+            station.coord = coordinates[i]
+        else:
+            station.coord = None
+
+        if i < rect_len and rectangles[i] != (0, 0, 0, 0):
+            station.rect = rectangles[i]
+        else:
+            station.rect = None
+
+        station.is_working = True  # TODO: make a calculation!
+        stations.append(station)
+    return stations
+
+
 def __get_additional_nodes(nodes, line, station_from, station_to):
     key = '%s,%s,%s' % (line, station_from, station_to)
     if key not in nodes:
@@ -209,7 +215,7 @@ def __load_additional_nodes(ini):
                 name, ini['__FILE_NAME__'], text))
 
         line, station_from, station_to = parts[:3]
-        is_spline = parts[-1] == 'spline'
+        is_spline = parts[-1].strip() == 'spline'
         points = as_points(parts[3:])
 
         key = '%s,%s,%s' % (line, station_from, station_to)
