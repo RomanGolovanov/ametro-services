@@ -18,6 +18,8 @@ __DEFAULT_COLOR = '000000'
 __DEFAULT_LABEL_COLOR = '000000'
 __DEFAULT_LABEL_BG_COLOR = ''
 
+__SCHEME_GAP_SIZE = 100
+
 
 def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
@@ -95,8 +97,8 @@ def __load_map(src_path, scheme_file_path, line_index, global_names):
                 width = max(width, x)
                 height = max(height, y)
 
-    scheme.width = width
-    scheme.height = height
+    scheme.width = width + __SCHEME_GAP_SIZE
+    scheme.height = height + __SCHEME_GAP_SIZE
 
     return scheme
 
