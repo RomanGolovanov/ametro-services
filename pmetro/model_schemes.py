@@ -229,7 +229,7 @@ def __calculate_scheme_size(scheme):
             for (x, y) in points:
                 width = max(width, int(x))
                 height = max(height, int(y))
-    return height + __SCHEME_GAP_SIZE, width + __SCHEME_GAP_SIZE
+    return width + __SCHEME_GAP_SIZE, height + __SCHEME_GAP_SIZE
 
 
 def __create_line_index(map_container):
