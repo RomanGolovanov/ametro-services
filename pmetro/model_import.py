@@ -12,8 +12,8 @@ def import_pmz_map(path, map_info):
     map_container = MapContainer()
     map_container.meta = MapMetadata(map_info)
 
-    load_transports(map_container, path)
-    load_schemes(map_container, path)
+    global_names = load_transports(map_container, path)
+    load_schemes(map_container, path, global_names)
     load_static(map_container, path)
 
     load_metadata(map_container, path, map_info)

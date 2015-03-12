@@ -16,10 +16,10 @@ __DEFAULT_STATIONS_DIAMETER = 11
 
 __DEFAULT_COLOR = '000000'
 __DEFAULT_LABEL_COLOR = '000000'
-__DEFAULT_LABEL_BG_COLOR = 'FFFFFFFF'
+__DEFAULT_LABEL_BG_COLOR = ''
 
 
-def load_schemes(map_container, src_path):
+def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
     if not any(scheme_files):
         raise FileNotFoundError('Cannot found .map files in %s' % src_path)
@@ -31,18 +31,17 @@ def load_schemes(map_container, src_path):
     line_index = __create_line_index(map_container)
 
     map_container.schemes = []
-    map_container.schemes.append(__load_map(src_path, default_file, line_index))
+    map_container.schemes.append(__load_map(src_path, default_file, line_index, global_names))
     for scheme_file_path in [x for x in scheme_files if x != default_file]:
-        map_container.schemes.append(__load_map(src_path, scheme_file_path, line_index))
+        map_container.schemes.append(__load_map(src_path, scheme_file_path, line_index, global_names))
 
 
-def __load_map(src_path, scheme_file_path, line_index):
+def __load_map(src_path, scheme_file_path, line_index, global_names):
     ini = deserialize_ini(scheme_file_path)
     scheme = MapScheme()
     scheme.name = get_file_name_without_ext(scheme_file_path).lower()
 
     scheme.images = []
-
     for image_file in as_quoted_list(get_ini_attr(ini, 'Options', 'ImageFileName', '')):
         image_file = image_file.strip()
         image_file_path = find_appropriate_file(os.path.join(src_path, image_file))
@@ -51,7 +50,10 @@ def __load_map(src_path, scheme_file_path, line_index):
         else:
             LOG.error('Not found file [%s] references in [%s], ignored' % (image_file_path, scheme_file_path))
 
+    scheme_line_width = get_ini_attr(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
+
     scheme.stations_diameter = get_ini_attr_float(ini, 'Options', 'StationDiameter', __DEFAULT_STATIONS_DIAMETER)
+    scheme.lines_width = scheme_line_width
     scheme.upper_case = get_ini_attr_bool(ini, 'Options', 'UpperCase', True)
     scheme.word_wrap = get_ini_attr_bool(ini, 'Options', 'WordWrap', True)
 
@@ -65,22 +67,44 @@ def __load_map(src_path, scheme_file_path, line_index):
         default_transports = ['Metro']
     scheme.default_transports = [get_file_name_without_ext(x).lower() for x in default_transports]
 
-    scheme_line_width = get_ini_attr(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
-
     additional_nodes = __load_additional_nodes(ini)
 
     scheme.lines = []
     for name in ini:
         if name not in line_index:
             continue
-        scheme.lines.append(__load_scheme_line(name, ini, line_index, scheme_line_width, additional_nodes))
+
+        scheme.lines.append(
+            __load_scheme_line(
+                name, ini, line_index, scheme_line_width, additional_nodes, global_names[name]))
+
+    width = 0
+    height = 0
+    for line in scheme.lines:
+        for station in line.stations:
+            if station.coord is None:
+                continue
+            (x, y) = station.coord
+            width = max(width, x)
+            height = max(height, y)
+
+        for (from_id, to_id, points, is_working) in line.segments:
+            if points is None or not any(points):
+                continue
+            for (x, y) in points:
+                width = max(width, x)
+                height = max(height, y)
+
+    scheme.width = width
+    scheme.height = height
 
     return scheme
 
 
-def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_nodes):
+def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_nodes, line_names):
     line = MapSchemeLine()
     line.name = name
+    line.display_name = line_names['display_name']
 
     line.line_color = get_ini_attr(ini, name, 'Color', __DEFAULT_COLOR)
     line.line_width = get_ini_attr(ini, name, 'Width', scheme_line_width)
@@ -92,18 +116,21 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
         as_int_point_list(get_ini_attr(ini, name, 'Coordinates', '')),
         as_int_rect_list(get_ini_attr(ini, name, 'Rects', '')),
         line_index[name],
-        additional_nodes)
+        additional_nodes,
+        line_names['stations'])
 
     return line
 
 
-def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
+def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes, station_names):
     stations = []
     coord_len = len(coordinates)
     rect_len = len(rectangles)
     for i in range(len(trp_line.stations)):
         station = MapSchemeStation()
-        station.name = __get_line_name(trp_line.stations[i], trp_line.aliases)
+        name = trp_line.stations[i]
+        station.name = name
+        station.display_name = station_names[name]
         if i < coord_len and coordinates[i] != (0, 0):
             station.coord = coordinates[i]
         else:
@@ -113,6 +140,8 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
             station.rect = rectangles[i]
         else:
             station.rect = None
+
+        station.is_working = True # TODO: make a calculation!
         stations.append(station)
 
     segments = dict()
@@ -148,9 +177,11 @@ def __load_scheme_stations(coordinates, rectangles, trp_line, additional_nodes):
             if len(added_segment_points) > len(points):
                 continue
 
-        segments[(min_id, max_id)] = (min_id, max_id, points)
+        is_working = True # TODO: make a calculation!
 
-    return stations, list(sorted(segments.values()))
+        segments[(min_id, max_id)] = (min_id, max_id, points, is_working)
+
+    return [x for x in stations if x.coord is not None], list(sorted(segments.values()))
 
 
 def __get_additional_nodes(nodes, line, station_from, station_to):
@@ -192,7 +223,7 @@ def __create_line_index(map_container):
     return by_line_index
 
 
-def __get_line_name(name, aliases):
+def __get_display_name(name, aliases):
     if name in aliases:
         return aliases[name]
     return name

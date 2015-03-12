@@ -16,6 +16,9 @@ __TRANSPORT_TYPE_DEFAULT = 'Метро'
 
 
 def load_transports(map_container, path):
+
+    global_names = {}
+
     transport_files = find_files_by_extension(path, '.trp')
     if not any(transport_files):
         raise FileNotFoundError('Cannot found .trp files in %s' % path)
@@ -25,12 +28,13 @@ def load_transports(map_container, path):
         raise FileNotFoundError('Cannot found Metro.trp file in %s' % path)
 
     map_container.transports = []
-    map_container.transports.append(load_transport(map_container.meta.file, default_file))
+    map_container.transports.append(load_transport(global_names, map_container.meta.file, default_file))
     for trp in [x for x in transport_files if x != default_file]:
-        map_container.transports.append(load_transport(map_container.meta.map_id, trp))
+        map_container.transports.append(load_transport(global_names, map_container.meta.map_id, trp))
 
+    return global_names
 
-def load_transport(file_name, path):
+def load_transport(global_names, file_name, path):
     ini = deserialize_ini(path)
     transport = MapTransport()
     transport.name = get_file_name_without_ext(path).lower()
@@ -39,7 +43,7 @@ def load_transport(file_name, path):
         transport.type = 'Метро'
         LOG.info('Empty transport type for map %s.trp in %s' % (transport.name, path))
 
-    transport.lines = __load_transport_lines(ini)
+    transport.lines = __load_transport_lines(global_names, ini)
     transport.transfers = __load_transfers(ini)
     return transport
 
@@ -92,7 +96,7 @@ def __load_transfers(ini):
     return transfers
 
 
-def __load_transport_lines(ini):
+def __load_transport_lines(global_names, ini):
     sections = get_ini_sections(ini, 'Line')
     if not any(sections):
         return []
@@ -103,7 +107,6 @@ def __load_transport_lines(ini):
         display_name = get_ini_attr(ini, section_name, 'Alias', system_name)
 
         line = MapTransportLine()
-        line.alias = display_name
         line.name = system_name
 
         line_scheme = get_ini_attr(ini, section_name, 'LineMap')
@@ -114,16 +117,30 @@ def __load_transport_lines(ini):
             get_ini_attr(ini, section_name, 'Stations'),
             get_ini_attr(ini, section_name, 'Driving'))
 
-        line.aliases = __parse_aliases(get_ini_attr(ini, section_name, 'Aliases'))
         line.delays = __parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
         lines.append(line)
+
+        global_names[line.name] = dict(
+            display_name=display_name,
+            stations=__parse_display_names(get_ini_attr(ini, section_name, 'Aliases'), line.stations)
+        )
+
     return lines
 
 
-def __parse_aliases(aliases_text):
-    if aliases_text is None or len(aliases_text) == 0:
-        return dict()
-    return as_dict(aliases_text)
+def __parse_display_names(aliases_text, station_names):
+    alias_dict = {}
+    if aliases_text is not None and len(aliases_text) != 0:
+        alias_dict = as_dict(aliases_text)
+
+    display_names_dict = dict()
+    for name in station_names:
+        if name in alias_dict:
+            display_names_dict[name] = alias_dict[name]
+        else:
+            display_names_dict[name] = name
+
+    return display_names_dict
 
 
 def __parse_line_delays(delays_section):

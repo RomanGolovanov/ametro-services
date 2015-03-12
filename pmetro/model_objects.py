@@ -10,7 +10,7 @@ class MapMetadata(object):
         self.version = map_info['version']
         self.geo_name_id = map_info['id']
         self.description = map_info['description']
-        self.comments = map_info['comments']        
+        self.comments = map_info['comments']
         self.delays = []
         self.transport_types = []
         self.transports = []
@@ -45,18 +45,19 @@ class MapTransport(object):
 class MapTransportLine(object):
     def __init__(self):
         self.name = ''
-        self.alias = ''
         self.scheme = ''
         self.stations = []
         self.segments = []
-        self.aliases = []
 
 
 class MapScheme(object):
     def __init__(self):
         self.name = ''
+        self.width = 0
+        self.height = 0
         self.images = []
         self.stations_diameter = 11
+        self.lines_width = 9
         self.upper_case = True
         self.word_wrap = True
         self.transports = []
@@ -67,11 +68,12 @@ class MapScheme(object):
 class MapSchemeLine(object):
     def __init__(self):
         self.name = ''
+        self.display_name = ''
         self.line_color = 0
-        self.line_width = 9
+        self.line_width = 0
         self.labels_color = 0
         self.labels_bg_color = 0
-        self.rect = (0,0,0,0)
+        self.rect = (0, 0, 0, 0)
         self.stations = []
         self.segments = []
 
@@ -79,5 +81,7 @@ class MapSchemeLine(object):
 class MapSchemeStation(object):
     def __init__(self):
         self.name = None
+        self.display_name = None
         self.coord = None
         self.rect = None
+        self.is_working = None
