@@ -64,7 +64,11 @@ def __create_composite_name(name):
     return '__' + name + '_COMPOSITE__'
 
 def get_ini_attr_bool(ini, section_name, prop_name, default_value=None):
-    return bool(get_ini_attr(ini, section_name, prop_name, default_value))
+    value = get_ini_attr(ini, section_name, prop_name, None)
+    if value is None:
+        return default_value
+
+    return value.strip().lower() == 'true'
 
 
 def get_ini_attr_int(ini, section_name, prop_name, default_value=None):
@@ -73,10 +77,6 @@ def get_ini_attr_int(ini, section_name, prop_name, default_value=None):
 
 def get_ini_attr_float(ini, section_name, prop_name, default_value=None):
     return float(get_ini_attr(ini, section_name, prop_name, default_value))
-
-
-def get_ini_attr_int(ini, section_name, prop_name, default_value=None):
-    return int(get_ini_attr(ini, section_name, prop_name, default_value))
 
 
 def get_ini_attr(ini_obj, section_name, prop_name, default_value=None):
