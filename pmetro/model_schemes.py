@@ -39,14 +39,17 @@ def load_schemes(map_container, src_path, global_names):
     line_index = __create_line_index(map_container)
 
     line_colors = dict()
+    transfers_list = __create_visible_transfer_list(map_container)
 
     map_container.schemes = []
-    map_container.schemes.append(__load_map(src_path, default_file, line_index, global_names, line_colors))
+    map_container.schemes.append(
+        __load_map(src_path, default_file, line_index, global_names, line_colors, transfers_list))
     for scheme_file_path in [x for x in scheme_files if x != default_file]:
-        map_container.schemes.append(__load_map(src_path, scheme_file_path, line_index, global_names, line_colors))
+        map_container.schemes.append(
+            __load_map(src_path, scheme_file_path, line_index, global_names, line_colors, transfers_list))
 
 
-def __load_map(src_path, scheme_file_path, line_index, global_names, line_colors):
+def __load_map(src_path, scheme_file_path, line_index, global_names, line_colors, transfers_list):
     ini = deserialize_ini(scheme_file_path)
     scheme = MapScheme()
     scheme.name = get_file_name_without_ext(scheme_file_path).lower()
@@ -88,6 +91,7 @@ def __load_map(src_path, scheme_file_path, line_index, global_names, line_colors
             __load_scheme_line(
                 name, ini, line_index, scheme_line_width, additional_nodes, global_names[name], line_colors))
 
+    scheme.transfers = __create_scheme_transfers(scheme.lines, transfers_list)
     scheme.width, scheme.height = __calculate_scheme_size(scheme)
 
     return scheme
@@ -112,8 +116,6 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
         line_index[name],
         additional_nodes,
         line_names['stations'])
-
-
 
     return line
 
@@ -276,4 +278,43 @@ def __is_station_working(station_id, segments):
             return True
     return False
 
+
+def __create_scheme_transfers(lines, transfer_list):
+    transfers = []
+
+    stations = dict()
+    for line in lines:
+        for station in line.stations:
+            stations[(line.name, station.name)] = station
+
+    for from_line_name, from_station_name, to_line_name, to_station_name in transfer_list:
+
+        if (from_line_name, from_station_name) not in stations:
+            continue
+
+        if (to_line_name, to_station_name) not in stations:
+            continue
+
+        from_station = stations[(from_line_name, from_station_name)]
+        to_station = stations[(to_line_name, to_station_name)]
+
+        transfers.append((
+            from_line_name,
+            from_station_name,
+            to_line_name,
+            to_station_name,
+            from_station.coord,
+            to_station.coord
+        ))
+
+    return transfers
+
+
+def __create_visible_transfer_list(map_container):
+    lst = []
+    for trp in map_container.transports:
+        for from_line, from_station, to_line, to_station, delay, flag in trp.transfers:
+            if flag.lower() == 'visible':
+                lst.append((from_line, from_station, to_line, to_station))
+    return lst
 
