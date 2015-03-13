@@ -21,12 +21,8 @@ __DEFAULT_LABEL_BG_COLOR = ''
 
 __SCHEME_GAP_SIZE = 100
 
-__ZERO_COORD = (0, 0)
-__MINUS_ONE_COORD = (-1, -1)
-__NONE_COORD = (None, None)
-__ZERO_RECT = (0, 0, 0, 0)
-__NONE_RECT = (None, None, None, None)
-
+__INVALID_COORD = [(None, None), (0, 0), (-1, -1), (-2, -2)]
+__INVALID_RECT = [(None, None, None, None), (0, 0, 0, 0)]
 
 def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
@@ -151,7 +147,7 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
             trp_line.stations[from_id],
             trp_line.stations[to_id])
 
-        if len(pts) == 1 and (pts[0] == __ZERO_COORD or pts[0] == __MINUS_ONE_COORD):
+        if len(pts) == 1 and pts[0] in __INVALID_COORD:
             removed_segments.append(segment_id)
             # do not show segment with (0,0) in additional nodes
             if segment_id in segments:
@@ -184,14 +180,12 @@ def __load_stations(coordinates, rectangles, station_names, trp_line):
         station.name = name
         station.display_name = station_names[name]
 
-        if i < len(coordinates) and coordinates[i] is not None \
-                and coordinates[i] != __ZERO_COORD and coordinates[i] != __NONE_COORD:
+        if i < len(coordinates) and coordinates[i] is not None and coordinates[i] not in __INVALID_COORD:
             station.coord = coordinates[i]
         else:
             station.coord = None
 
-        if i < len(rectangles) and rectangles[i] is not None \
-                and rectangles[i] != __ZERO_RECT and rectangles[i] != __NONE_RECT:
+        if i < len(rectangles) and rectangles[i] is not None and rectangles[i] not in __INVALID_RECT:
             station.rect = rectangles[i]
         else:
             station.rect = None
