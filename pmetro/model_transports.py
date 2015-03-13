@@ -172,7 +172,17 @@ def __get_stations(stations_text):
 
         station = stations_iter.next()
 
-        if station not in filtered and not quoted:
+        if not quoted:
+            if station in filtered:
+                counter = 1
+                name = '%s:%s' % (station, counter)
+                while name in filtered:
+                    counter += 1
+                    name = '%s:%s' % (station, counter)
+
+                LOG.warning('Station %s already been found, used %s' % (station, name))
+                station = name
+
             filtered.add(station)
             stations.append(station)
 

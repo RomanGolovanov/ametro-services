@@ -125,8 +125,8 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
 
     segments = dict()
     removed_segments = []
-    for i in range(len(trp_line.segments)):
-        from_id, to_id, delay = trp_line.segments[i]
+    for from_id, to_id, delay in trp_line.segments:
+
         min_id, max_id = min(from_id, to_id), max(from_id, to_id)
         segment_id = (min_id, max_id)
 
