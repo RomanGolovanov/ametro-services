@@ -22,6 +22,7 @@ __DEFAULT_LABEL_BG_COLOR = ''
 __SCHEME_GAP_SIZE = 100
 
 __ZERO_COORD = (0, 0)
+__MINUS_ONE_COORD = (-1, -1)
 __NONE_COORD = (None, None)
 __ZERO_RECT = (0, 0, 0, 0)
 __NONE_RECT = (None, None, None, None)
@@ -144,13 +145,13 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
         else:
             is_working = False
 
-        additional_points, is_spline = __get_additional_nodes(
+        pts, is_spline = __get_additional_nodes(
             additional_nodes,
             trp_line.name,
             trp_line.stations[from_id],
             trp_line.stations[to_id])
 
-        if len(additional_points) == 1 and additional_points[0] == __ZERO_COORD:
+        if len(pts) == 1 and (pts[0] == __ZERO_COORD or pts[0] == __MINUS_ONE_COORD):
             removed_segments.append(segment_id)
             # do not show segment with (0,0) in additional nodes
             if segment_id in segments:
@@ -158,7 +159,7 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
                 del segments[segment_id]
             continue
 
-        points = list((station_start.coord,)) + additional_points + list((station_end.coord,))
+        points = list((station_start.coord,)) + pts + list((station_end.coord,))
         if is_spline:
             points = round_points_array(cubic_interpolate(points))
 
@@ -212,8 +213,6 @@ def __get_additional_nodes(nodes, line, station_from, station_to):
         return list(reversed(points)), is_spline
 
     return list(), False
-
-
 
 
 def __load_additional_nodes(ini):
