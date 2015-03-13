@@ -143,7 +143,7 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
             trp_line.stations[to_id])
 
         if len(additional_points) == 1 and additional_points[0] == __ZERO_COORD:
-            removed_segments.append()
+            removed_segments.append(segment_id)
             # do not show segment with (0,0) in additional nodes
             if segment_id in segments:
                 # remove opposite one if exists
