@@ -116,9 +116,14 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
     stations = __load_stations(coordinates, rectangles, station_names, trp_line)
 
     segments = dict()
+    removed_segments = []
     for i in range(len(trp_line.segments)):
         from_id, to_id, delay = trp_line.segments[i]
         min_id, max_id = min(from_id, to_id), max(from_id, to_id)
+        segment_id = (min_id, max_id)
+
+        if segment_id in removed_segments:
+            continue
 
         station_start = stations[from_id]
         station_end = stations[to_id]
@@ -138,24 +143,25 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
             trp_line.stations[to_id])
 
         if len(additional_points) == 1 and additional_points[0] == __ZERO_COORD:
+            removed_segments.append()
             # do not show segment with (0,0) in additional nodes
-            if (min_id, max_id) in segments:
+            if segment_id in segments:
                 # remove opposite one if exists
-                del segments[(min_id, max_id)]
+                del segments[segment_id]
             continue
 
         points = list((station_start.coord,)) + additional_points + list((station_end.coord,))
         if is_spline:
             points = round_points_array(cubic_interpolate(points))
 
-        if (min_id, max_id) in segments:
-            added_min_id, added_max_id, added_points, added_is_working = segments[(min_id, max_id)]
+        if segment_id in segments:
+            added_min_id, added_max_id, added_points, added_is_working = segments[segment_id]
             if len(added_points) > len(points):
                 points = added_points
             if added_is_working:
                 is_working = True
 
-        segments[(min_id, max_id)] = (min_id, max_id, points, is_working)
+        segments[segment_id] = (min_id, max_id, points, is_working)
 
     return [x for x in stations if x.coord is not None], list(sorted(segments.values()))
 
