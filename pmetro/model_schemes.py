@@ -21,7 +21,6 @@ __DEFAULT_LABEL_BG_COLOR = ''
 
 __SCHEME_GAP_SIZE = 100
 
-
 __ZERO_COORD = (0, 0)
 __NONE_COORD = (None, None)
 __ZERO_RECT = (0, 0, 0, 0)
@@ -137,6 +136,13 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
             trp_line.name,
             trp_line.stations[from_id],
             trp_line.stations[to_id])
+
+        if len(additional_points) == 1 and additional_points[0] == __ZERO_COORD:
+            # do not show segment with (0,0) in additional nodes
+            if (min_id, max_id) in segments:
+                # remove opposite one if exists
+                del segments[(min_id, max_id)]
+            continue
 
         points = list((station_start.coord,)) + additional_points + list((station_end.coord,))
         if is_spline:
