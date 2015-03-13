@@ -38,13 +38,15 @@ def load_schemes(map_container, src_path, global_names):
 
     line_index = __create_line_index(map_container)
 
+    line_colors = dict()
+
     map_container.schemes = []
-    map_container.schemes.append(__load_map(src_path, default_file, line_index, global_names))
+    map_container.schemes.append(__load_map(src_path, default_file, line_index, global_names, line_colors))
     for scheme_file_path in [x for x in scheme_files if x != default_file]:
-        map_container.schemes.append(__load_map(src_path, scheme_file_path, line_index, global_names))
+        map_container.schemes.append(__load_map(src_path, scheme_file_path, line_index, global_names, line_colors))
 
 
-def __load_map(src_path, scheme_file_path, line_index, global_names):
+def __load_map(src_path, scheme_file_path, line_index, global_names, line_colors):
     ini = deserialize_ini(scheme_file_path)
     scheme = MapScheme()
     scheme.name = get_file_name_without_ext(scheme_file_path).lower()
@@ -84,19 +86,21 @@ def __load_map(src_path, scheme_file_path, line_index, global_names):
 
         scheme.lines.append(
             __load_scheme_line(
-                name, ini, line_index, scheme_line_width, additional_nodes, global_names[name]))
+                name, ini, line_index, scheme_line_width, additional_nodes, global_names[name], line_colors))
 
     scheme.width, scheme.height = __calculate_scheme_size(scheme)
 
     return scheme
 
 
-def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_nodes, line_names):
+def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_nodes, line_names, line_colors):
     line = MapSchemeLine()
     line.name = name
     line.display_name = line_names['display_name']
 
-    line.line_color = get_ini_attr(ini, name, 'Color', __DEFAULT_COLOR)
+    line.line_color = get_ini_attr(ini, name, 'Color', __get_line_color(name, line_colors))
+    line_colors[name] = line.line_color
+
     line.line_width = get_ini_attr_int(ini, name, 'Width', scheme_line_width)
     line.labels_color = get_ini_attr(ini, name, 'LabelsColor', __DEFAULT_LABEL_COLOR)
     line.labels_bg_color = get_ini_attr(ini, name, 'LabelsBColor', __DEFAULT_LABEL_BG_COLOR)
@@ -108,6 +112,8 @@ def __load_scheme_line(name, ini, line_index, scheme_line_width, additional_node
         line_index[name],
         additional_nodes,
         line_names['stations'])
+
+
 
     return line
 
@@ -256,6 +262,12 @@ def __get_display_name(name, aliases):
     if name in aliases:
         return aliases[name]
     return name
+
+
+def __get_line_color(name, line_colors):
+    if name in line_colors:
+        return line_colors[name]
+    return __DEFAULT_COLOR
 
 
 def __is_station_working(station_id, segments):
