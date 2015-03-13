@@ -203,11 +203,17 @@ def __load_stations(coordinates, rectangles, station_names, trp_line):
 
 def __get_additional_nodes(nodes, line, station_from, station_to):
     key = '%s,%s,%s' % (line, station_from, station_to)
-    if key not in nodes:
-        key = '%s,%s,%s' % (line, station_to, station_from)
-        if key not in nodes:
-            return list(), False
-    return nodes[key]
+    if key in nodes:
+        return nodes[key]
+
+    key = '%s,%s,%s' % (line, station_to, station_from)
+    if key in nodes:
+        points, is_spline = nodes[key]
+        return list(reversed(points)), is_spline
+
+    return list(), False
+
+
 
 
 def __load_additional_nodes(ini):
