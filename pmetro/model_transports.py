@@ -175,7 +175,7 @@ def __get_stations(stations_text):
         if not quoted:
             if station in filtered:
                 counter = 1
-                name = '%s:%s' % (station, counter)
+                name = '%s:X:%s' % (station, counter)
                 while name in filtered:
                     counter += 1
                     name = '%s:%s' % (station, counter)
