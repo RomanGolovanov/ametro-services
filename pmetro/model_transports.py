@@ -159,7 +159,6 @@ def __parse_line_delays(delays_section):
 
 def __get_stations(stations_text):
     stations = []
-    filtered = set()
     stations_iter = StationsString(stations_text)
     quoted = False
     while stations_iter.has_next():
@@ -173,38 +172,25 @@ def __get_stations(stations_text):
         station = stations_iter.next()
 
         if not quoted:
-            if station in filtered:
-                counter = 1
-                name = '%s:X:%s' % (station, counter)
-                while name in filtered:
-                    counter += 1
-                    name = '%s:%s' % (station, counter)
-
-                LOG.warning('Station %s already been found, used %s' % (station, name))
-                station = name
-
-            filtered.add(station)
             stations.append(station)
 
     return stations
 
 
 def __parse_station_and_delays(stations_text, drivings_text):
-    stations_iter = StationsString(stations_text)
-    delays_iter = DelaysString(drivings_text)
 
     stations = __get_stations(stations_text)
-
     if len(stations) < 2 and len(drivings_text) == 0:
         return stations, []
 
     segments = []
 
+    delays_iter = DelaysString(drivings_text)
+    stations_iter = StationsString(stations_text)
+
     from_station = None
     from_delay = None
-
     this_station = stations_iter.next()
-
     while True:
         if stations_iter.next_separator == '(':
             idx = 0
@@ -364,7 +350,10 @@ class StationsString:
         self.pos = 0
         self.next_separator = ''
         self.next_reverse = False
+        self.quoted = False
         self.reset()
+
+        self.filtered = []
 
     def reset(self):
         self.pos = 0
@@ -388,9 +377,16 @@ class StationsString:
         return self.pos >= self.len
 
     def next(self):
+        if self.next_separator == '(':
+            self.quoted = True
+        if self.next_separator == ')':
+            self.quoted = False
+
         self.__skip_to_content()
         if self.__eof():
             return ''
+
+
         current = self.pos
         symbol = None
         quotes = False
@@ -420,6 +416,18 @@ class StationsString:
         if txt.startswith('"-'):
             self.next_reverse = True
             txt = '"' + txt[2:]
+
+        if not self.quoted:
+            if txt in self.filtered:
+                counter = 1
+                name = '%s:X:%s' % (txt, counter)
+                while name in self.filtered:
+                    counter += 1
+                    name = '%s:X:%s' % (txt, counter)
+
+                LOG.error('Station %s already been found, used %s' % (txt, name))
+                txt = name
+            self.filtered.append(txt)
 
         return txt
 
