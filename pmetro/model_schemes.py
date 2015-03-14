@@ -12,6 +12,9 @@ from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_float, 
 
 LOG = ConsoleLog()
 
+__DEFAULT_SCHEME_TYPE_NAME = 'OTHER'
+__ROOT_SCHEME_TYPE_NAME = 'ROOT'
+
 __DEFAULT_LINES_WIDTH = 9
 __DEFAULT_STATIONS_DIAMETER = 11
 
@@ -24,6 +27,7 @@ __SCHEME_GAP_SIZE = 100
 __INVALID_COORD = [(None, None), (0, 0), (-1, -1), (-2, -2)]
 __INVALID_RECT = [(None, None, None, None), (0, 0, 0, 0)]
 
+
 def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
     if not any(scheme_files):
@@ -34,22 +38,41 @@ def load_schemes(map_container, src_path, global_names):
         raise FileNotFoundError('Cannot found Metro.map file in %s' % src_path)
 
     line_index = __create_line_index(map_container)
+    scheme_index = __create_scheme_index(map_container)
+    transport_index = __create_transport_index(map_container)
+    transfers_list = __create_visible_transfer_list(map_container)
 
     line_colors = dict()
-    transfers_list = __create_visible_transfer_list(map_container)
 
     map_container.schemes = []
     map_container.schemes.append(
-        __load_map(src_path, default_file, line_index, global_names, line_colors, transfers_list))
+        __load_map(src_path, default_file, line_index, scheme_index, transport_index, global_names, line_colors, transfers_list))
     for scheme_file_path in [x for x in scheme_files if x != default_file]:
         map_container.schemes.append(
-            __load_map(src_path, scheme_file_path, line_index, global_names, line_colors, transfers_list))
+            __load_map(src_path, scheme_file_path, line_index, scheme_index, transport_index, global_names, line_colors, transfers_list))
 
 
-def __load_map(src_path, scheme_file_path, line_index, global_names, line_colors, transfers_list):
+def __suggest_scheme_display_name_and_type(name, transport_index, scheme_index, global_names):
+    if name in transport_index:
+        trp = transport_index[name]
+        return trp.type, __ROOT_SCHEME_TYPE_NAME
+
+    if name in scheme_index:
+        trp_line, trp_scheme = scheme_index[name]
+        return global_names[trp_line.name]['display_name'], trp_scheme.type
+
+    return name, __DEFAULT_SCHEME_TYPE_NAME
+
+def __load_map(src_path, scheme_file_path, line_index, scheme_index, transport_index, global_names, line_colors, transfers_list):
     ini = deserialize_ini(scheme_file_path)
     scheme = MapScheme()
     scheme.name = get_file_name_without_ext(scheme_file_path).lower()
+
+    scheme.display_name, scheme.type_name = __suggest_scheme_display_name_and_type(
+        scheme.name,
+        transport_index,
+        scheme_index,
+        global_names)
 
     scheme.images = []
     for image_file in as_quoted_list(get_ini_attr(ini, 'Options', 'ImageFileName', '')):
@@ -254,17 +277,26 @@ def __calculate_scheme_size(scheme):
 
 
 def __create_line_index(map_container):
-    by_line_index = {}
+    index = dict()
     for trp in map_container.transports:
         for line in trp.lines:
-            by_line_index[line.name] = line
-    return by_line_index
+            index[line.name] = line
+    return index
 
 
-def __get_display_name(name, aliases):
-    if name in aliases:
-        return aliases[name]
-    return name
+def __create_scheme_index(map_container):
+    index = dict()
+    for trp in map_container.transports:
+        for line in [l for l in trp.lines if l.scheme is not None and l.scheme != '']:
+            index[line.scheme] = (line, trp)
+    return index
+
+
+def __create_transport_index(map_container):
+    index = dict()
+    for trp in map_container.transports:
+        index[trp.name] = trp
+    return index
 
 
 def __get_line_color(name, line_colors):

@@ -53,6 +53,8 @@ class MapTransportLine(object):
 class MapScheme(object):
     def __init__(self):
         self.name = ''
+        self.display_name = ''
+        self.type_name = ''
         self.width = 0
         self.height = 0
         self.images = []

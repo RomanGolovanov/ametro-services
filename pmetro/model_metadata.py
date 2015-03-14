@@ -4,7 +4,7 @@ from pmetro.ini_files import deserialize_ini
 from pmetro.ini_files import get_ini_attr
 
 
-def load_metadata(map_container, path, map_info):
+def load_metadata(map_container, path):
     metadata_files = find_files_by_extension(path, '.cty')
     if not any(metadata_files):
         raise FileNotFoundError('Cannot found .cty file in %s' % path)
@@ -35,7 +35,9 @@ def __get_scheme_meta(scheme, child_schemes):
         'file': 'schemes/' + scheme.name + '.json',
         'transports': scheme.transports,
         'default_transports': scheme.default_transports,
-        'root': scheme.name not in child_schemes
+        'root': scheme.name not in child_schemes,
+        'display_name': scheme.display_name,
+        'type_name': scheme.type_name,
     }
 
 
