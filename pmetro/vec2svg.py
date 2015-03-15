@@ -15,7 +15,7 @@ __FONT_WIDTH = 0.3
 __FONT_HEIGHT = 0.9
 
 
-def convert_vec_to_svg(vec_file, svg_file, log, save_meta=False):
+def convert_vec_to_svg(vec_file, svg_file, log, save_meta=False, shift_origin=False):
     style = {
         'brush': 'none',
         'pen': 'none',
@@ -48,7 +48,7 @@ def convert_vec_to_svg(vec_file, svg_file, log, save_meta=False):
 
         'spotrect': __vec_cmd_empty,
         'spotcircle': __vec_cmd_empty,
-        'image':  __vec_cmd_empty
+        'image': __vec_cmd_empty
     }
 
     dwg = svgwrite.Drawing(profile='tiny')
@@ -80,16 +80,23 @@ def convert_vec_to_svg(vec_file, svg_file, log, save_meta=False):
 
     x0, y0, x1, y1 = style['rect']
     w, h = style['size']
-    dwg.attribs['width'] = '%spx' % int(x1 - x0 + __MAP_EDGE_SIZE * 2)
-    dwg.attribs['height'] = '%spx' % int(y1 - y0 + __MAP_EDGE_SIZE * 2)
-    root_container.attribs['transform'] = 'translate(%s,%s)' % ( -x0 + __MAP_EDGE_SIZE, -y0 + __MAP_EDGE_SIZE )
+    meta = {'width': w, 'height': h, 'left': x0, 'top': y0, 'right': x1, 'bottom': y1}
+
+    if shift_origin:
+        dwg.attribs['width'] = '%spx' % int(x1 - x0 + __MAP_EDGE_SIZE * 2)
+        dwg.attribs['height'] = '%spx' % int(y1 - y0 + __MAP_EDGE_SIZE * 2)
+        root_container.attribs['transform'] = 'translate(%s,%s)' % (-x0 + __MAP_EDGE_SIZE, -y0 + __MAP_EDGE_SIZE)
+    else:
+        dwg.attribs['width'] = '%spx' % int(w)
+        dwg.attribs['height'] = '%spx' % int(h)
 
     dwg.saveas(svg_file)
 
     if save_meta:
-        meta = {'width': w, 'height': h, 'dx': x0 - __MAP_EDGE_SIZE, 'dy': y0 - __MAP_EDGE_SIZE}
         with codecs.open(svg_file + '.meta.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(meta, ensure_ascii=False))
+
+    return meta
 
 
 def __vec_cmd_size(dwg, root, text, style):
@@ -114,7 +121,7 @@ def __vec_cmd_text_out(dwg, root, text, style):
     font_weight = 'normal'
     x = float(p[2])
     y = float(p[3])
-    pos = (x - font_size * __FONT_WIDTH / 2, y + font_size*__FONT_HEIGHT)
+    pos = (x - font_size * __FONT_WIDTH / 2, y + font_size * __FONT_HEIGHT)
     txt = ' '.join(p[4:])
     if txt.endswith(' 1'):
         txt = txt[:-2]
@@ -325,6 +332,7 @@ def __vec_cmd_railway(dwg, root, text, style):
 
 def __vec_cmd_empty(dwg, root, text, style):
     pass
+
 
 def __update_bounding_box(points, style):
     w, h = style['size']
