@@ -27,6 +27,11 @@ __SCHEME_GAP_SIZE = 100
 __INVALID_COORD = [(None, None), (0, 0), (-1, -1), (-2, -2)]
 __INVALID_RECT = [(None, None, None, None), (0, 0, 0, 0)]
 
+__WELL_KNOWN_SCHEME_TRANSPORTS = {
+    'railway': 'trains',
+    'tramways': 'trams',
+    'rechnoytramvay': 'tramsriver'
+}
 
 def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
@@ -54,14 +59,19 @@ def load_schemes(map_container, src_path, global_names):
 
 def __suggest_scheme_display_name_and_type(name, transport_index, scheme_index, global_names):
     if name in transport_index:
-        trp = transport_index[name]
-        return trp.type, __ROOT_SCHEME_TYPE_NAME
+        return transport_index[name].type, __ROOT_SCHEME_TYPE_NAME
+
+    if name in __WELL_KNOWN_SCHEME_TRANSPORTS:
+        suggested_name = __WELL_KNOWN_SCHEME_TRANSPORTS[name]
+        if suggested_name in transport_index:
+            return transport_index[suggested_name].type, __ROOT_SCHEME_TYPE_NAME
 
     if name in scheme_index:
         trp_line, trp_scheme = scheme_index[name]
         return global_names[trp_line.name]['display_name'], trp_scheme.type
 
     return name, __DEFAULT_SCHEME_TYPE_NAME
+
 
 def __load_map(src_path, scheme_file_path, line_index, scheme_index, transport_index, global_names, line_colors, transfers_list):
     ini = deserialize_ini(scheme_file_path)
