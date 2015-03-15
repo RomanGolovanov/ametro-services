@@ -33,6 +33,18 @@ __WELL_KNOWN_SCHEME_TRANSPORTS = {
     'rechnoytramvay': 'tramsriver'
 }
 
+__WELL_KNOWN_ROOT_SCHEME_TYPES = {
+    'metro': 'Метро',
+    'railway': 'Электричка',
+    'trains': 'Электричка',
+    'tramways': 'Трамвай',
+    'trams': 'Трамвай',
+    'trolleys': 'Троллейбус',
+    'tramsriver': 'Речной Трамвай',
+    'rechnoytramvay': 'Речной Трамвай'
+}
+
+
 def load_schemes(map_container, src_path, global_names):
     scheme_files = find_files_by_extension(src_path, '.map')
     if not any(scheme_files):
@@ -69,6 +81,9 @@ def __suggest_scheme_display_name_and_type(name, transport_index, scheme_index, 
     if name in scheme_index:
         trp_line, trp_scheme = scheme_index[name]
         return global_names[trp_line.name]['display_name'], trp_scheme.type
+
+    if name in __WELL_KNOWN_ROOT_SCHEME_TYPES:
+        return __WELL_KNOWN_ROOT_SCHEME_TYPES[name], __ROOT_SCHEME_TYPE_NAME
 
     return name, __DEFAULT_SCHEME_TYPE_NAME
 

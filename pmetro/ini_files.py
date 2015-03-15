@@ -50,6 +50,7 @@ def deserialize_ini(file_path):
             if composite_name not in section:
                 section[composite_name] = section[name]
             section[composite_name] = section[composite_name] + '\n' + value
+
         section[name] = value
         continue
 
