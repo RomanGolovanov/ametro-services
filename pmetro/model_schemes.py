@@ -216,7 +216,7 @@ def __load_scheme_stations_and_segments(coordinates, rectangles, trp_line, addit
 
         segments[segment_id] = (min_id, max_id, points, is_working)
 
-    return [x for x in stations if x.coord is not None], list(sorted(segments.values()))
+    return stations, list(sorted(segments.values()))
 
 
 def __load_stations(coordinates, rectangles, station_names, trp_line):

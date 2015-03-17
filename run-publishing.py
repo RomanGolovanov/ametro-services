@@ -22,6 +22,7 @@ pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
 log = CompositeLog([
     ConsoleLog(level=LogLevel.Info),
     FileLog(file_path='import.verbose.log', level=LogLevel.Debug),
+    FileLog(file_path='import.info.log', level=LogLevel.Info),
     FileLog(file_path='import.warnings.log', level=LogLevel.Warning),
     FileLog(file_path='import.errors.log', level=LogLevel.Error)
 ])
@@ -30,12 +31,12 @@ ini_files.LOG = log
 model_transports.LOG = log
 model_schemes.LOG = log
 
-log.error('')
-log.error('Publishing started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.message('')
+log.message('Publishing started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
 cache = MapCache(pmetro_url, cache_path, temp_path, log)
 publication = MapPublication(publication_path, temp_path, log)
 publication.import_maps(cache_path, force=True)
 
-log.error('Publishing ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.message('Publishing ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 

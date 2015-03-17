@@ -2,8 +2,8 @@ import os
 import shutil
 
 from PIL import Image
-from pmetro.files import get_file_ext, get_file_name_without_ext, find_appropriate_file
 
+from pmetro.files import get_file_ext, get_file_name_without_ext, find_appropriate_file
 from pmetro.model_import import import_pmz_map
 from pmetro.model_serialization import store_model
 from pmetro.vec2svg import convert_vec_to_svg
@@ -12,6 +12,8 @@ from pmetro.vec2svg import convert_vec_to_svg
 def convert_map(map_info, src_path, dst_path, log):
     if not os.path.isdir(dst_path):
         os.mkdir(dst_path)
+
+    log.message("Begin processing %s" % src_path)
 
     map_container = import_pmz_map(src_path, map_info)
     map_info['delays'] = map_container.meta.delays

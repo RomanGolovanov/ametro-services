@@ -7,6 +7,7 @@ class LogLevel(object):
     Info = 1
     Warning = 2
     Error = 3
+    Message = 4
 
 
 class BaseLog(object):
@@ -34,6 +35,9 @@ class BaseLog(object):
     def debug(self, message):
         self.write(message, LogLevel.Debug)
 
+    def message(self, message):
+        self.write(message, LogLevel.Message)
+
     @staticmethod
     def log_level_text(level):
         return {
@@ -41,6 +45,7 @@ class BaseLog(object):
             LogLevel.Info: 'Info',
             LogLevel.Warning: 'Warning',
             LogLevel.Error: 'Error',
+            LogLevel.Message: 'Message'
         }[level]
 
 

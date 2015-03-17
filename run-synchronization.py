@@ -30,7 +30,8 @@ ini_files.LOG = log
 model_transports.LOG = log
 model_schemes.LOG = log
 
-log.error('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.message('')
+log.message('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
 cache = MapCache(pmetro_url, cache_path, temp_path, log)
 cache.refresh(force=False)
@@ -38,5 +39,5 @@ cache.refresh(force=False)
 publication = MapPublication(publication_path, temp_path, log)
 publication.import_maps(cache_path, force=True)
 
-log.error('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+log.message('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
