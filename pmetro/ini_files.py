@@ -4,6 +4,11 @@ from pmetro.log import ConsoleLog
 
 LOG = ConsoleLog()
 
+__DUPLICATES_SAFE_FILES = {
+    '.cty',
+    '.txt'
+}
+
 
 def deserialize_ini(file_path):
     pos = 0
@@ -23,6 +28,7 @@ def deserialize_ini(file_path):
             continue
 
         if cleaned == '[]':
+            LOG.write('Empty section [] detected in file \'%s\'' % file_path)
             break
 
         if cleaned.startswith('[') and cleaned.endswith(']'):
@@ -48,6 +54,10 @@ def deserialize_ini(file_path):
         if name in section:
             composite_name = __create_composite_name(name)
             if composite_name not in section:
+
+                if not any((ext for ext in __DUPLICATES_SAFE_FILES if file_path.endswith(ext))):
+                    LOG.warning('Duplicate parameter name \'%s\' found in file %s at line %s' % (name, file_path, pos))
+
                 section[composite_name] = section[name]
             section[composite_name] = section[composite_name] + '\n' + value
         else:
@@ -63,6 +73,7 @@ def deserialize_ini(file_path):
 
 def __create_composite_name(name):
     return '__' + name + '_COMPOSITE__'
+
 
 def get_ini_attr_bool(ini, section_name, prop_name, default_value=None):
     value = get_ini_attr(ini, section_name, prop_name, None)

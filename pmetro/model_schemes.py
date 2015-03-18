@@ -106,7 +106,7 @@ def __load_map(src_path, scheme_file_path, line_index, scheme_index, transport_i
         if os.path.isfile(image_file_path):
             scheme.images.append(image_file)
         else:
-            LOG.error('Not found file [%s] references in [%s], ignored' % (image_file_path, scheme_file_path))
+            LOG.error('Not found file %s references in %s, ignored' % (image_file_path, scheme_file_path))
 
     scheme_line_width = get_ini_attr_int(ini, 'Options', 'LinesWidth', __DEFAULT_LINES_WIDTH)
 
@@ -269,7 +269,7 @@ def __load_additional_nodes(ini):
             continue
 
         if len(parts) < 5:
-            LOG.warning('Skipped additional node [%s] in [%s] - insufficient parameters in [%s]' % (
+            LOG.warning('Skipped additional node \'%s\' in %s - insufficient parameters in \'%s\'' % (
                 name, ini['__FILE_NAME__'], text))
 
         line, station_from, station_to = parts[:3]

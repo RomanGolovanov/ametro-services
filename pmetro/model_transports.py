@@ -425,7 +425,7 @@ class StationsString:
                     counter += 1
                     name = '%s:X:%s' % (txt, counter)
 
-                LOG.error('Station %s already been found, used %s' % (txt, name))
+                LOG.error('Station \'%s\' already been found, used \'%s\'. Station line: %s' % (txt, name, self.text))
                 txt = name
             self.filtered.append(txt)
 

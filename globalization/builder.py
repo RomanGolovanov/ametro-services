@@ -18,8 +18,6 @@ __CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (geoname_id int, language
 __CREATE_ALT_NAME_INDEX_QUERY = 'CREATE INDEX IX_city_search ON country (search_name)'
 __INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?,?)'
 
-
-
 __MAX_BATCH_SIZE = 10000
 
 __CITIES_GEO_NAME_FILE = 'cities1000.zip'
@@ -100,7 +98,7 @@ def __process_lines(lines, cnn, cursor, insert_query, parse_func, parse_context,
         print('inserting final batch of %s records' % len(batch))
         cursor.executemany(insert_query, batch)
         cnn.commit()
-    print('complete importing data from [%s], processed %s records' % (source_file, record_count))
+    print('complete importing data from %s, processed %s records' % (source_file, record_count))
 
 
 def __parse_city_record(text, context):

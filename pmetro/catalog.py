@@ -63,12 +63,12 @@ class MapCatalog(object):
     def save(self, path):
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
-                json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False))
+                json.dumps({'maps': self.maps, 'version': self.get_version()}, ensure_ascii=False, indent=4))
 
     def save_version(self, path):
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
-                json.dumps({'version': self.get_version()}, ensure_ascii=False))
+                json.dumps({'version': self.get_version()}, ensure_ascii=False, indent=4))
 
     def save_countries(self, path):
         country_iso_dict = {}
@@ -78,7 +78,7 @@ class MapCatalog(object):
             country_iso_dict[country_name] = country_iso
         with codecs.open(path, 'w', 'utf-8') as f:
             f.write(
-                json.dumps(country_iso_dict, ensure_ascii=False, indent=True))
+                json.dumps(country_iso_dict, ensure_ascii=False, indent=4))
 
     def load(self, path):
         with codecs.open(path, 'r', 'utf-8') as f:
@@ -183,6 +183,9 @@ class MapCache(object):
         geonames_provider = GeoNamesProvider()
 
         xml_maps = urllib.request.urlopen(self.service_url + 'Files.xml').read().decode('windows-1251')
+
+        with codecs.open(os.path.join(self.cache_path, "Files.xml"), 'w', 'utf-8') as f:
+            f.write(xml_maps)
 
         catalog = MapCatalog()
         for el in ET.fromstring(xml_maps):

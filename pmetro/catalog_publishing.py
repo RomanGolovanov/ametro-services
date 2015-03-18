@@ -75,7 +75,7 @@ def __convert_static_file(src_path, src_name, dst_path, log):
     src_file_path = find_appropriate_file(os.path.join(src_path, src_name))
 
     if not os.path.isfile(src_file_path):
-        log.error('Not found image file [%s]' % src_file_path)
+        log.error('Not found image file %s' % src_file_path)
         return None
 
     src_file_ext = get_file_ext(src_file_path)
