@@ -28,7 +28,7 @@ def deserialize_ini(file_path):
             continue
 
         if cleaned == '[]':
-            LOG.write('Empty section [] detected in file \'%s\'' % file_path)
+            LOG.info('Empty section [] detected in file %s at line %s, stop reading file' % (file_path, pos))
             break
 
         if cleaned.startswith('[') and cleaned.endswith(']'):
