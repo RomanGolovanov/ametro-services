@@ -35,19 +35,30 @@ class MapImage(object):
 
 
 class MapTransport(object):
-    def __init__(self):
-        self.name = ''
-        self.type = ''
-        self.lines = []
-        self.transfers = []
+    def __init__(self, name='', type_name='', lines=None, transfers=None):
+        if not lines:
+            lines = []
+        if not transfers:
+            transfers = []
+        self.name = name
+        self.type_name = type_name
+        self.lines = lines
+        self.transfers = transfers
 
 
 class MapTransportLine(object):
-    def __init__(self):
-        self.name = ''
-        self.scheme = ''
-        self.stations = []
-        self.segments = []
+    def __init__(self, uid=None, scheme=None, stations=None, segments=None, delays=None):
+        if not delays:
+            delays = []
+        if not segments:
+            segments = []
+        if not stations:
+            stations = []
+        self.uid = uid
+        self.scheme = scheme
+        self.stations = stations
+        self.segments = segments
+        self.delays = delays
 
 
 class MapScheme(object):

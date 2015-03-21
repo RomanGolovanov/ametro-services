@@ -16,7 +16,6 @@ __TRANSPORT_TYPE_DEFAULT = 'Метро'
 
 
 def load_transports(map_container, path):
-
     global_names = {}
 
     transport_files = find_files_by_extension(path, '.trp')
@@ -28,34 +27,32 @@ def load_transports(map_container, path):
         raise FileNotFoundError('Cannot found Metro.trp file in %s' % path)
 
     map_container.transports = []
-    map_container.transports.append(load_transport(global_names, map_container.meta.file, default_file))
+    map_container.transports.append(__load_transport(global_names, map_container.meta.file, default_file))
     for trp in [x for x in transport_files if x != default_file]:
-        map_container.transports.append(load_transport(global_names, map_container.meta.map_id, trp))
+        map_container.transports.append(__load_transport(global_names, map_container.meta.file, trp))
 
     return global_names
 
-def load_transport(global_names, file_name, path):
+
+def __load_transport(global_names, file_name, path):
     ini = deserialize_ini(path)
     transport = MapTransport()
     transport.name = get_file_name_without_ext(path).lower()
-    transport.type = __get_transport_type(file_name, transport.name, ini)
-    if transport.type is None:
-        transport.type = 'Метро'
-        LOG.info('Empty transport type for map %s.trp in %s' % (transport.name, path))
+    transport.type = get_transport_type(file_name, transport.name, ini)
 
     transport.lines = __load_transport_lines(global_names, ini)
     transport.transfers = __load_transfers(ini)
     return transport
 
 
-def __get_transport_type(file_name, trp_name, ini):
+def get_transport_type(file_name, trp_name, ini):
     if not any(__TRANSPORT_TYPE_DICT):
         assets_path = os.path.join(os.path.dirname(__file__), 'assets')
         with codecs.open(os.path.join(assets_path, 'transports.csv'), 'rU', encoding='utf-8') as f:
             for line in f:
                 _file_name, _trp_name, _trp_type = as_quoted_list(line)
-                __TRANSPORT_TYPE_DICT[_file_name.lower().strip() + '.zip.' + _trp_name.lower().strip()] = _trp_type.strip(
-                    '\r\n').strip()
+                __TRANSPORT_TYPE_DICT[
+                    _file_name.lower().strip() + '.zip.' + _trp_name.lower().strip()] = _trp_type.strip('\r\n').strip()
 
     trp_type = get_ini_attr(ini, 'Options', 'Type', None)
     if trp_type is not None:
@@ -89,10 +86,10 @@ def __load_transfers(ini):
             delay = None
 
         if len(params) > 5:
-            visibility = params[5]
+            flag = params[5]
         else:
-            visibility = 'visible'
-        transfers.append((from_line.strip(), from_station.strip(), to_line.strip(), to_station.strip(), delay, visibility))
+            flag = 'visible'
+        transfers.append((from_line.strip(), from_station.strip(), to_line.strip(), to_station.strip(), delay, flag))
     return transfers
 
 
@@ -113,22 +110,25 @@ def __load_transport_lines(global_names, ini):
         if line_scheme is not None:
             line.scheme = get_file_name_without_ext(line_scheme).lower()
 
-        line.stations, line.segments = __parse_station_and_delays(
+        stations, segments = parse_station_and_delays(
             get_ini_attr(ini, section_name, 'Stations'),
             get_ini_attr(ini, section_name, 'Driving'))
 
-        line.delays = __parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
+        line.stations = stations
+        line.segments = segments
+
+        line.delays = parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
         lines.append(line)
 
         global_names[line.name] = dict(
             display_name=display_name,
-            stations=__parse_display_names(get_ini_attr(ini, section_name, 'Aliases'), line.stations)
+            stations=parse_display_names(get_ini_attr(ini, section_name, 'Aliases'), line.stations)
         )
 
     return lines
 
 
-def __parse_display_names(aliases_text, station_names):
+def parse_display_names(aliases_text, station_names):
     alias_dict = {}
     if aliases_text is not None and len(aliases_text) != 0:
         alias_dict = as_dict(aliases_text)
@@ -143,7 +143,7 @@ def __parse_display_names(aliases_text, station_names):
     return display_names_dict
 
 
-def __parse_line_delays(delays_section):
+def parse_line_delays(delays_section):
     delays = {}
     if 'Delays' in delays_section:
         default_delays = as_delay_list(delays_section['Delays'])
@@ -157,7 +157,7 @@ def __parse_line_delays(delays_section):
     return delays
 
 
-def __get_stations(stations_text):
+def get_stations(stations_text):
     stations = []
     stations_iter = StationsString(stations_text)
     quoted = False
@@ -169,7 +169,7 @@ def __get_stations(stations_text):
         if stations_iter.next_separator == ')':
             quoted = False
 
-        station = stations_iter.next()
+        station, original_station = stations_iter.next()
 
         if not quoted:
             stations.append(station)
@@ -177,9 +177,8 @@ def __get_stations(stations_text):
     return stations
 
 
-def __parse_station_and_delays(stations_text, drivings_text):
-
-    stations = __get_stations(stations_text)
+def parse_station_and_delays(stations_text, drivings_text):
+    stations = get_stations(stations_text)
     if len(stations) < 2 and len(drivings_text) == 0:
         return stations, []
 
@@ -190,7 +189,7 @@ def __parse_station_and_delays(stations_text, drivings_text):
 
     from_station = None
     from_delay = None
-    this_station = stations_iter.next()
+    this_station, original_station = stations_iter.next()
     while True:
         if stations_iter.next_separator == '(':
             idx = 0
@@ -198,7 +197,7 @@ def __parse_station_and_delays(stations_text, drivings_text):
             while stations_iter.has_next() and stations_iter.next_separator != ')':
                 is_forward = True
 
-                bracketed_station_name = stations_iter.next()
+                bracketed_station_name, original_station = stations_iter.next()
                 if stations_iter.next_reverse:
                     is_forward = not is_forward
 
@@ -219,9 +218,9 @@ def __parse_station_and_delays(stations_text, drivings_text):
             if not stations_iter.has_next():
                 break
 
-            this_station = stations_iter.next()
+            this_station, original_station = stations_iter.next()
         else:
-            to_station = stations_iter.next()
+            to_station, original_station = stations_iter.next()
 
             if delays_iter.begin_bracket():
                 delays = delays_iter.next_bracket()
@@ -386,7 +385,6 @@ class StationsString:
         if self.__eof():
             return ''
 
-
         current = self.pos
         symbol = None
         quotes = False
@@ -417,6 +415,8 @@ class StationsString:
             self.next_reverse = True
             txt = '"' + txt[2:]
 
+        original_txt = txt
+
         if not self.quoted:
             if txt in self.filtered:
                 counter = 1
@@ -429,7 +429,7 @@ class StationsString:
                 txt = name
             self.filtered.append(txt)
 
-        return txt
+        return txt, original_txt
 
     def __skip_to_content(self):
         symbol = self.at_next()
