@@ -1,5 +1,5 @@
 import langdetect
-from transliterate import translit, get_available_language_codes
+import transliterate
 
 
 def load_texts(map_container, text_index_table):
@@ -8,7 +8,7 @@ def load_texts(map_container, text_index_table):
 
     localizations = [default_text_table]
 
-    if default_text_table.language_code in get_available_language_codes():
+    if default_text_table.language_code in transliterate.get_available_language_codes():
         localizations.append(transliterate_text_table_to_en(default_text_table))
 
     map_container.texts = localizations
@@ -18,13 +18,14 @@ def load_texts(map_container, text_index_table):
 
 def transliterate_text_table_to_en(text_table):
     language_code = text_table.language_code
-    if language_code not in get_available_language_codes():
+    if language_code not in transliterate.get_available_language_codes():
         raise ValueError(
             "Language code " + language_code + " not found in supported transliteration tables " + ",".join(
-                get_available_language_codes()))
+                transliterate.get_available_language_codes()))
 
     return TextTable(
-        [(text_id, translit(text, text_table.language_code, reversed=True)) for text_id, text in text_table.texts],
+        [(text_id, transliterate.translit(text, text_table.language_code, reversed=True)) for text_id, text in
+         text_table.texts],
         'en'
     )
 
@@ -42,6 +43,9 @@ class TextIndexTable(object):
         self.counter = 10000
 
     def as_text_id(self, text):
+        if text is None:
+            return None
+
         if text in self.texts:
             self.texts_counter[text] += 1
             return self.texts[text]
