@@ -11,6 +11,10 @@ LOG = ConsoleLog()
 __TRANSPORT_TYPE_DICT = {}
 __TRANSPORT_TYPE_DEFAULT = 'Метро'
 
+__DELAYS_TYPES = {
+    'DelayDay': 0,
+    'DelayNight': 1
+}
 
 def get_transport_type(file_name, trp_name, ini):
     if not any(__TRANSPORT_TYPE_DICT):
@@ -48,17 +52,21 @@ def parse_display_names(aliases_text, station_names):
     return display_names_dict
 
 
-def parse_line_delays(delays_section):
-    delays = {}
+def parse_line_delays(line_name, delays_section):
     if 'Delays' in delays_section:
-        default_delays = as_delay_list(delays_section['Delays'])
-        for i in range(len(default_delays)):
-            delays[str(i)] = default_delays[i]
-        del delays_section['Delays']
+        if len(delays_section.items()) > 1:
+            LOG.error("Line \'{0}\' contains both Delays and Delay* parameters: {1}, used value from Delays".format(
+                line_name,
+                delays_section))
+        return dict([(key, value) for key, value in enumerate(as_delay_list(delays_section['Delays']))])
 
+    delays = {}
     for name in delays_section:
-        delays[name[5:]] = delays_section[name]
+        if name not in __DELAYS_TYPES:
+            LOG.error("Line \'{0}\' contains unknown parameter {1}, ignored".format(line_name, name))
+            continue
 
+        delays[__DELAYS_TYPES[name]] = delays_section[name]
     return delays
 
 

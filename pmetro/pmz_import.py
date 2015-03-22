@@ -68,8 +68,29 @@ class PmzImporter(object):
 
         load_metadata(container, path)
 
+        self.__validate(container)
         return container
 
+    def __validate(self, container):
+
+        valid = True
+
+        delays_count = len(container.meta.delays)
+        for transport in container.transports:
+            for line in transport.lines:
+                if not line.delays:
+                    continue
+
+                if len(line.delays.items()) != delays_count:
+                    valid = False
+                    self.__logger.error(
+                        "Delays in line \'{0}\' ({1}) or {2}.trp is not valid for map delay list {3}".format(
+                            line.name,
+                            line.delays,
+                            transport.name,
+                            container.meta.delays))
+
+        return valid
 
 def create_visible_transfer_list(transports):
     lst = []
@@ -138,7 +159,7 @@ class PmzTransportImporter(object):
                 get_file_name_without_ext(line_map).lower() if line_map is not None else None,
                 stations,
                 segments,
-                parse_line_delays(line_delays)
+                parse_line_delays(line_name, line_delays)
             ))
 
         return lines
