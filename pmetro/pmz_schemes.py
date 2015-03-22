@@ -67,10 +67,7 @@ def create_transport_index(transports):
 def create_visible_transfer_list(transports):
     lst = []
     for trp in transports:
-        for from_line, from_station, to_line, to_station, delay, flag in trp.transfers:
-            if flag.lower() == 'visible':
-                lst.append((from_line, from_station, to_line, to_station))
+        for from_uid, to_uid, delay, is_visible in trp.transfers:
+            if is_visible:
+                lst.append((from_uid, to_uid))
     return lst
-
-
-

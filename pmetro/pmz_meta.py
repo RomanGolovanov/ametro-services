@@ -36,8 +36,8 @@ def __get_scheme_meta(scheme, child_schemes):
         'transports': scheme.transports,
         'default_transports': scheme.default_transports,
         'root': scheme.name not in child_schemes,
-        'display_name': scheme.display_name,
-        'type_name': scheme.type_name,
+        'name_text_id': scheme.name_text_id,
+        'type_text_id': scheme.type_text_id,
     }
 
 

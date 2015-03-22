@@ -10,12 +10,12 @@ from pmetro.pmz_meta import load_metadata
 from pmetro.entities import MapScheme, MapSchemeLine, MapSchemeStation
 from pmetro.pmz_static import load_static
 from pmetro.pmz_schemes import create_line_index, create_scheme_index, create_transport_index, \
-    suggest_scheme_display_name_and_type
+    suggest_scheme_display_name_and_type, create_visible_transfer_list
 from pmetro.pmz_transports import get_transport_type, StationsString, parse_station_and_delays
 from pmetro.file_utils import find_files_by_extension, get_file_name_without_ext
 from pmetro.helpers import as_dict, as_quoted_list
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_collection, get_ini_sections, get_ini_section
-from pmetro.pmz_texts import StationIndex, TextIndexTable
+from pmetro.pmz_texts import StationIndex, TextIndexTable, load_texts
 from pmetro.entities import MapMetadata, MapContainer, MapTransport, MapTransportLine
 from pmetro.pmz_transports import parse_line_delays
 
@@ -62,13 +62,17 @@ class PmzImporter(object):
         container.meta = meta
         container.transports = imported_transports
         container.schemes = imported_schemes
-        container.texts = text_index_table.get_text_table()
 
         load_static(container, path)
-
         load_metadata(container, path)
+        load_texts(container, text_index_table)
 
         self.__validate(container)
+
+        self.__logger.info(
+            "Map loaded, text compression: {0}, text size: {1}".format(text_index_table.get_compression(),
+                                                                       text_index_table.get_text_length()))
+
         return container
 
     def __validate(self, container):
@@ -91,14 +95,6 @@ class PmzImporter(object):
                             container.meta.delays))
 
         return valid
-
-def create_visible_transfer_list(transports):
-    lst = []
-    for trp in transports:
-        for from_uid, to_uid, delay, is_visible in trp.transfers:
-            if is_visible:
-                lst.append((from_uid, to_uid))
-    return lst
 
 
 class PmzTransportImporter(object):
@@ -309,10 +305,15 @@ class PmzSchemeImporter(object):
             as_list(get_ini_attr(ini, 'Options', 'CheckedTransports', '')),
             ['Metro'])
 
+
+        display_name, type_name = suggest_scheme_display_name_and_type(name, self.__transport_index, self.__scheme_index, self.__text_index_table)
+
         scheme = MapScheme()
         scheme.name = name
-        scheme.display_name, scheme.type_name = suggest_scheme_display_name_and_type(
-            scheme.name, self.__transport_index, self.__scheme_index, self.__text_index_table)
+
+        scheme.name_text_id = self.__text_index_table.as_text_id(display_name)
+        scheme.type_text_id = self.__text_index_table.as_text_id(type_name)
+
         scheme.images = self.__get_images_links(file, as_quoted_list(map_files))
         scheme.lines_width = line_width
         scheme.stations_diameter = diameter

@@ -15,6 +15,8 @@ class MapMetadata(object):
         self.transport_types = []
         self.transports = []
         self.schemes = []
+        self.locales = []
+        self.default_locale = None
 
 
 class MapContainer(object):
@@ -59,8 +61,8 @@ class MapTransportLine(object):
 class MapScheme(object):
     def __init__(self):
         self.name = ''
-        self.display_name = ''
-        self.type_name = ''
+        self.name_text_id = ''
+        self.type_text_id = ''
         self.width = 0
         self.height = 0
         self.images = []

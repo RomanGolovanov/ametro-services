@@ -1,7 +1,7 @@
 import codecs
 import os
 
-from pmetro.helpers import as_delay_list, as_quoted_list, as_delay, as_dict
+from pmetro.helpers import as_delay_list, as_quoted_list, as_delay
 from pmetro.log import ConsoleLog
 from pmetro.ini_files import get_ini_attr
 
@@ -35,21 +35,6 @@ def get_transport_type(file_name, trp_name, ini):
     else:
         LOG.error('Unknown transport type for \'%s.trp\' in \'%s\', used defaults' % (trp_name, file_name))
         return __TRANSPORT_TYPE_DEFAULT
-
-
-def parse_display_names(aliases_text, station_names):
-    alias_dict = {}
-    if aliases_text is not None and len(aliases_text) != 0:
-        alias_dict = as_dict(aliases_text)
-
-    display_names_dict = dict()
-    for name in station_names:
-        if name in alias_dict:
-            display_names_dict[name] = alias_dict[name]
-        else:
-            display_names_dict[name] = name
-
-    return display_names_dict
 
 
 def parse_line_delays(line_name, delays_section):

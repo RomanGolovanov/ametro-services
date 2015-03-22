@@ -2,6 +2,33 @@ import langdetect
 from transliterate import translit, get_available_language_codes
 
 
+def load_texts(map_container, text_index_table):
+    default_text_table = text_index_table.get_text_table()
+    default_locale = default_text_table.language_code
+
+    localizations = [default_text_table]
+
+    if default_text_table.language_code in get_available_language_codes():
+        localizations.append(transliterate_text_table_to_en(default_text_table))
+
+    map_container.texts = localizations
+    map_container.meta.locales = [x.language_code for x in localizations]
+    map_container.meta.default_locale = default_locale
+
+
+def transliterate_text_table_to_en(text_table):
+    language_code = text_table.language_code
+    if language_code not in get_available_language_codes():
+        raise ValueError(
+            "Language code " + language_code + " not found in supported transliteration tables " + ",".join(
+                get_available_language_codes()))
+
+    return TextTable(
+        [(text_id, translit(text, text_table.language_code, reversed=True)) for text_id, text in text_table.texts],
+        'en'
+    )
+
+
 class TextTable(object):
     def __init__(self, texts, language_code):
         self.texts = texts
@@ -11,15 +38,17 @@ class TextTable(object):
 class TextIndexTable(object):
     def __init__(self):
         self.texts = dict()
-        self.counter = 100000
+        self.texts_counter = dict()
+        self.counter = 10000
 
     def as_text_id(self, text):
         if text in self.texts:
+            self.texts_counter[text] += 1
             return self.texts[text]
 
         text_id = self.counter
         self.texts[text] = text_id
-
+        self.texts_counter[text] = 1
         self.counter += 1
 
         return text_id
@@ -34,18 +63,14 @@ class TextIndexTable(object):
             langdetect.detect(full_text)
         )
 
+    def get_compression(self):
+        char_count = 0
+        for text, count in self.texts_counter.items():
+            char_count += len(text) * (count - 1)
+        return char_count
 
-def transliterate_text_table_to_en(text_table):
-    language_code = text_table.language_code
-    if language_code not in get_available_language_codes():
-        raise ValueError(
-            "Language code " + language_code + " not found in supported transliteration tables " + ",".join(
-                get_available_language_codes()))
-
-    return TextTable(
-        [(text_id, translit(text, text_table.language_code, reversed=True)) for text_id, text in text_table.texts],
-        'en'
-    )
+    def get_text_length(self):
+        return sum([len(text) for text, id in self.texts.items()])
 
 
 class StationIndex(object):
