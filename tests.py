@@ -1,7 +1,8 @@
-from pmetro import model_serialization
+from pmetro import serialization
 from pmetro.catalog_publishing import convert_map
-from pmetro.importers.importer import PmzImporter
 from pmetro.log import ConsoleLog
+from pmetro.pmz_import import PmzImporter
+
 
 map_info = \
     {
@@ -22,10 +23,5 @@ map_info = \
 src = 'src'
 dst = 'dst'
 logger = ConsoleLog()
-
-importer = PmzImporter(src, map_info)
-container = importer.import_pmz()
-
-print(model_serialization.as_json(container))
 
 convert_map(map_info, src, dst, logger)

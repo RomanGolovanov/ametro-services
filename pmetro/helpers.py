@@ -48,7 +48,10 @@ def as_int_rect(text=''):
     return [top, left, width, height]
 
 
-def as_dict(text=''):
+def as_dict(text=None):
+    if not text:
+        return dict()
+
     lst = as_quoted_list(text)
     obj = dict()
     for x in range(0, len(lst) // 2):
@@ -159,7 +162,7 @@ def as_quoted_list(line, separator=','):
     if any(current):
         parts.append(''.join(current))
 
-    return parts
+    return [x.strip() for x in parts]
 
 
 def un_bugger_for_float(text):
@@ -182,4 +185,10 @@ def round_point(value):
 
 def round_points_array(value):
     return [round_point(p) for p in value]
+
+
+def default_if_empty(element, defaults):
+    if not element:
+        return defaults
+    return element
 

@@ -10,7 +10,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from globalization.provider import GeoNamesProvider
-from pmetro.files import unzip_file, zip_folder, find_file_by_extension
+from pmetro.file_utils import unzip_file, zip_folder, find_file_by_extension
 from pmetro.log import EmptyLog
 from pmetro.catalog_publishing import convert_map
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_composite_attr

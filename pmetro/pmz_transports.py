@@ -1,48 +1,15 @@
 import codecs
 import os
 
-from pmetro.files import find_files_by_extension, get_file_name_without_ext
-
-from pmetro.helpers import as_delay_list, as_quoted_list, un_bugger_for_float, as_delay, as_dict
+from pmetro.helpers import as_delay_list, as_quoted_list, as_delay, as_dict
 from pmetro.log import ConsoleLog
-from pmetro.model_objects import MapTransport, MapTransportLine
-from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_section, get_ini_sections, get_ini_attr_collection
+from pmetro.ini_files import get_ini_attr
 
 
 LOG = ConsoleLog()
 
 __TRANSPORT_TYPE_DICT = {}
 __TRANSPORT_TYPE_DEFAULT = 'Метро'
-
-
-def load_transports(map_container, path):
-    global_names = {}
-
-    transport_files = find_files_by_extension(path, '.trp')
-    if not any(transport_files):
-        raise FileNotFoundError('Cannot found .trp files in %s' % path)
-
-    default_file = os.path.join(path, 'Metro.trp')
-    if default_file not in transport_files:
-        raise FileNotFoundError('Cannot found Metro.trp file in %s' % path)
-
-    map_container.transports = []
-    map_container.transports.append(__load_transport(global_names, map_container.meta.file, default_file))
-    for trp in [x for x in transport_files if x != default_file]:
-        map_container.transports.append(__load_transport(global_names, map_container.meta.file, trp))
-
-    return global_names
-
-
-def __load_transport(global_names, file_name, path):
-    ini = deserialize_ini(path)
-    transport = MapTransport()
-    transport.name = get_file_name_without_ext(path).lower()
-    transport.type = get_transport_type(file_name, transport.name, ini)
-
-    transport.lines = __load_transport_lines(global_names, ini)
-    transport.transfers = __load_transfers(ini)
-    return transport
 
 
 def get_transport_type(file_name, trp_name, ini):
@@ -64,68 +31,6 @@ def get_transport_type(file_name, trp_name, ini):
     else:
         LOG.error('Unknown transport type for \'%s.trp\' in \'%s\', used defaults' % (trp_name, file_name))
         return __TRANSPORT_TYPE_DEFAULT
-
-
-def __load_transfers(ini):
-    section = get_ini_section(ini, 'Transfers')
-    if section is None:
-        return []
-
-    transfers = []
-    for name in section:
-        if str(name).startswith('__'):
-            continue
-
-        line = section[name]
-        params = as_quoted_list(line)
-        from_line, from_station, to_line, to_station = params[:4]
-
-        if len(params) > 4:
-            delay = float(un_bugger_for_float(params[4]))
-        else:
-            delay = None
-
-        if len(params) > 5:
-            flag = params[5]
-        else:
-            flag = 'visible'
-        transfers.append((from_line.strip(), from_station.strip(), to_line.strip(), to_station.strip(), delay, flag))
-    return transfers
-
-
-def __load_transport_lines(global_names, ini):
-    sections = get_ini_sections(ini, 'Line')
-    if not any(sections):
-        return []
-
-    lines = []
-    for section_name in sections:
-        system_name = get_ini_attr(ini, section_name, 'Name')
-        display_name = get_ini_attr(ini, section_name, 'Alias', system_name)
-
-        line = MapTransportLine()
-        line.name = system_name
-
-        line_scheme = get_ini_attr(ini, section_name, 'LineMap')
-        if line_scheme is not None:
-            line.scheme = get_file_name_without_ext(line_scheme).lower()
-
-        stations, segments = parse_station_and_delays(
-            get_ini_attr(ini, section_name, 'Stations'),
-            get_ini_attr(ini, section_name, 'Driving'))
-
-        line.stations = stations
-        line.segments = segments
-
-        line.delays = parse_line_delays(get_ini_attr_collection(ini, section_name, 'Delay'))
-        lines.append(line)
-
-        global_names[line.name] = dict(
-            display_name=display_name,
-            stations=parse_display_names(get_ini_attr(ini, section_name, 'Aliases'), line.stations)
-        )
-
-    return lines
 
 
 def parse_display_names(aliases_text, station_names):
@@ -341,7 +246,7 @@ class DelaysString(object):
         return delays
 
 
-class StationsString:
+class StationsString(object):
     def __init__(self, text):
         self.text = str(text)
         self.len = len(text)
@@ -425,7 +330,7 @@ class StationsString:
                     counter += 1
                     name = '%s:X:%s' % (txt, counter)
 
-                LOG.error('Station \'%s\' already been found, used \'%s\'. Station line: %s' % (txt, name, self.text))
+                LOG.error('Station \'%s\' already been found, used \'%s\'.' % (txt, name))
                 txt = name
             self.filtered.append(txt)
 

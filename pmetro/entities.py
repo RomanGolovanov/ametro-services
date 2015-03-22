@@ -47,14 +47,9 @@ class MapTransport(object):
 
 
 class MapTransportLine(object):
-    def __init__(self, uid=None, scheme=None, stations=None, segments=None, delays=None):
-        if not delays:
-            delays = []
-        if not segments:
-            segments = []
-        if not stations:
-            stations = []
-        self.uid = uid
+    def __init__(self, name, text_id, scheme, stations, segments, delays):
+        self.name = name
+        self.text_id = text_id
         self.scheme = scheme
         self.stations = stations
         self.segments = segments
@@ -79,22 +74,22 @@ class MapScheme(object):
 
 
 class MapSchemeLine(object):
-    def __init__(self):
-        self.name = ''
-        self.display_name = ''
-        self.line_color = 0
-        self.line_width = 0
-        self.labels_color = 0
-        self.labels_bg_color = 0
-        self.rect = (0, 0, 0, 0)
-        self.stations = []
-        self.segments = []
+    def __init__(self, name, text_id, line_color, line_width, labels_color, labels_bg_color, stations, segments):
+        self.name = name
+        self.text_id = text_id
+        self.line_color = line_color
+        self.line_width = line_width
+        self.labels_color = labels_color
+        self.labels_bg_color = labels_bg_color
+        self.stations = stations
+        self.segments = segments
 
 
 class MapSchemeStation(object):
     def __init__(self):
+        self.uid = 0
         self.name = None
-        self.display_name = None
+        self.text_id = None
         self.coord = None
         self.rect = None
         self.is_working = None

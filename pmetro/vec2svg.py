@@ -3,11 +3,10 @@ import json
 
 import svgwrite
 
-from pmetro.files import read_all_lines
+from pmetro.file_utils import read_all_lines
 from pmetro.helpers import as_list, as_point_list_with_width, as_rgb, as_point_list, as_points
 from pmetro.graphics import vector_sub, vector_mul_s, vector_mod, vector_add, vector_rotate, cubic_interpolate, \
     vector_left, vector_right
-from pmetro.log import EmptyLog
 
 
 __MAP_EDGE_SIZE = 50

@@ -1,13 +1,13 @@
 # /usr/bin/env python3
 import datetime
 import os
+
 from globalization.builder import build_geonames_database
 from pmetro import ini_files
-from pmetro import model_transports
-from pmetro import model_schemes
-
+from pmetro import pmz_transports
 from pmetro.catalog import MapCache, MapPublication
 from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
+
 
 base_dir = ''
 
@@ -28,8 +28,7 @@ log = CompositeLog([
 ])
 
 ini_files.LOG = log
-model_transports.LOG = log
-model_schemes.LOG = log
+pmz_transports.LOG = log
 
 log.message('')
 log.message('Publishing started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))

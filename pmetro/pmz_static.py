@@ -1,7 +1,7 @@
 import os
-from pmetro.files import get_file_ext
+from pmetro.file_utils import get_file_ext
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_section
-from pmetro.model_objects import MapImage
+from pmetro.entities import MapImage
 
 
 def load_static(map_container, src_path):

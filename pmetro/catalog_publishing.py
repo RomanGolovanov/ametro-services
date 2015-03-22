@@ -3,9 +3,9 @@ import shutil
 
 from PIL import Image
 
-from pmetro.files import get_file_ext, get_file_name_without_ext, find_appropriate_file
-from pmetro.model_import import import_pmz_map
-from pmetro.model_serialization import store_model
+from pmetro.file_utils import get_file_ext, get_file_name_without_ext, find_appropriate_file
+from pmetro.pmz_import import PmzImporter
+from pmetro.serialization import store_model
 from pmetro.vec2svg import convert_vec_to_svg
 
 
@@ -15,11 +15,16 @@ def convert_map(map_info, src_path, dst_path, log):
 
     log.message("Begin processing %s" % src_path)
 
-    map_container = import_pmz_map(src_path, map_info)
-    map_info['delays'] = map_container.meta.delays
-    map_info['transports'] = map_container.meta.transport_types
-    __convert_resources(map_container, src_path, dst_path, log)
-    store_model(map_container, dst_path)
+    importer = PmzImporter(log)
+
+    container = importer.import_pmz(src_path, map_info)
+
+    map_info['delays'] = container.meta.delays
+    map_info['transports'] = container.meta.transport_types
+
+    __convert_resources(container, src_path, dst_path, log)
+
+    store_model(container, dst_path)
 
 
 def __convert_resources(map_container, src_path, dst_path, log):

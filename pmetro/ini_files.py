@@ -1,5 +1,5 @@
 import uuid
-from pmetro.files import read_all_lines
+from pmetro.file_utils import read_all_lines
 from pmetro.log import ConsoleLog
 
 LOG = ConsoleLog()
