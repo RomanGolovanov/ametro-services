@@ -29,6 +29,7 @@ def __get_child_schemes(map_container):
             children.add(line.scheme)
     return children
 
+
 def __get_scheme_meta(scheme, child_schemes):
     return {
         'name': scheme.name,

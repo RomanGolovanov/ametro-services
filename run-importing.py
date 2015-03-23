@@ -5,7 +5,6 @@ import os
 from globalization.builder import build_geonames_database
 from pmetro import ini_files
 from pmetro import pmz_transports
-from pmetro import pmz_schemes
 from pmetro.catalog import MapCache
 from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
 

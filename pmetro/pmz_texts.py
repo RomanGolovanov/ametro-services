@@ -1,5 +1,14 @@
-import langdetect
 import transliterate
+
+__WELL_KNOWN_WORDS = {
+    'Метро': 'Metro',
+    'Трамвай': 'Tram',
+    'Автобус': 'Bus',
+    'Электричка': 'Train',
+    'Речной Трамвай': 'Ferry',
+    'Троллейбус': 'Trolleybus',
+    'Фуникулер': 'Funicular',
+}
 
 
 def load_texts(map_container, text_index_table):
@@ -9,14 +18,14 @@ def load_texts(map_container, text_index_table):
     localizations = [default_text_table]
 
     if default_text_table.language_code in transliterate.get_available_language_codes():
-        localizations.append(transliterate_text_table_to_en(default_text_table))
+        localizations.append(translate_text_table_to_en(default_text_table))
 
     map_container.texts = localizations
     map_container.meta.locales = [x.language_code for x in localizations]
     map_container.meta.default_locale = default_locale
 
 
-def transliterate_text_table_to_en(text_table):
+def translate_text_table_to_en(text_table):
     language_code = text_table.language_code
     if language_code not in transliterate.get_available_language_codes():
         raise ValueError(
@@ -24,10 +33,16 @@ def transliterate_text_table_to_en(text_table):
                 transliterate.get_available_language_codes()))
 
     return TextTable(
-        [(text_id, transliterate.translit(text, text_table.language_code, reversed=True)) for text_id, text in
+        [(text_id, translate_text_to_en(text, text_table.language_code)) for text_id, text in
          text_table.texts],
         'en'
     )
+
+
+def translate_text_to_en(text, language_code):
+    if text in __WELL_KNOWN_WORDS:
+        return __WELL_KNOWN_WORDS[text]
+    return transliterate.translit(text, language_code, reversed=True)
 
 
 class TextTable(object):
@@ -61,10 +76,9 @@ class TextIndexTable(object):
         return self.texts.get(text_id, None)
 
     def get_text_table(self):
-        full_text = '. '.join([key for key, value in self.texts.items()])
         return TextTable(
             sorted([(value, key) for key, value in self.texts.items()], key=lambda x: x[0]),
-            langdetect.detect(full_text)
+            "ru"
         )
 
     def get_compression(self):
@@ -74,7 +88,7 @@ class TextIndexTable(object):
         return char_count
 
     def get_text_length(self):
-        return sum([len(text) for text, id in self.texts.items()])
+        return sum([len(text) for text, uid in self.texts.items()])
 
 
 class StationIndex(object):
@@ -121,7 +135,6 @@ class StationIndex(object):
             return self.pending_stations[key]
 
         return None
-
 
     def ensure_no_pending_stations(self):
         if not self.pending_stations:

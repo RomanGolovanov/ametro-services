@@ -73,6 +73,7 @@ class MapScheme(object):
         self.transports = []
         self.default_transports = []
         self.lines = []
+        self.is_vector = True
 
 
 class MapSchemeLine(object):

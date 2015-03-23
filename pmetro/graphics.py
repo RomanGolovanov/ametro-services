@@ -77,7 +77,7 @@ def cubic_interpolate(pts):
 
         for i in range(1, count * steps // step - 1):
             coord[2 * i * step + step] = (0 - coord[2 * i * step - 2 * step] + coord[2 * i * step] * 9 + coord[
-                2 * i * step + 2 * step] * 9 - coord[2 * i * step + 4 * step]    ) / 16.0
+                2 * i * step + 2 * step] * 9 - coord[2 * i * step + 4 * step]) / 16.0
             coord[2 * i * step + step + 1] = (0 - coord[2 * i * step - 2 * step + 1] + coord[2 * i * step + 1] * 9 +
                                               coord[2 * i * step + 2 * step + 1] * 9 - coord[
                 2 * i * step + 4 * step + 1]) / 16.0

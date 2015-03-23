@@ -16,6 +16,7 @@ __DELAYS_TYPES = {
     'DelayNight': 1
 }
 
+
 def get_transport_type(file_name, trp_name, ini):
     if not any(__TRANSPORT_TYPE_DICT):
         assets_path = os.path.join(os.path.dirname(__file__), 'assets')

@@ -1,7 +1,5 @@
-from pmetro import serialization
 from pmetro.catalog_publishing import convert_map
 from pmetro.log import ConsoleLog
-from pmetro.pmz_import import PmzImporter
 
 
 map_info = \

@@ -24,7 +24,7 @@ __CITIES_GEO_NAME_FILE = 'cities1000.zip'
 __COUNTRIES_GEO_NAME_FILE = 'countryInfo.zip'
 __ALT_GEO_NAME_FILE = 'alternateNames.zip'
 
-__ALT_LANGUAGE_SET = set(['en', 'ru', 'es', 'it', 'fr', 'ja', 'fi', 'pl', 'de'])
+__ALT_LANGUAGE_SET = {'en', 'ru', 'es', 'it', 'fr', 'ja', 'fi', 'pl', 'de'}
 
 
 def build_geonames_database(geonames_path, force=False):
@@ -64,14 +64,13 @@ def build_geonames_database(geonames_path, force=False):
     cnn.commit()
 
 
-
 def __fill_table(cnn, cursor, src_path, src_name, parse_func, parse_context, insert_query):
     src_full_name = os.path.join(src_path, src_name)
-    with zipfile.ZipFile(src_full_name, 'r') as zip:
-        for zip_entry_name in zip.namelist():
+    with zipfile.ZipFile(src_full_name, 'r') as zf:
+        for zip_entry_name in zf.namelist():
             if zip_entry_name[:-3] != src_name[:-3]:
                 continue
-            with zip.open(zip_entry_name, 'r') as f:
+            with zf.open(zip_entry_name, 'r') as f:
                 __process_lines(codecs.iterdecode(f, encoding='utf-8'), cnn, cursor, insert_query,
                                 parse_func, parse_context, src_name)
 

@@ -45,7 +45,7 @@ def __convert_resources(map_container, src_path, dst_path, log):
             if converted_file_path is None:
                 continue
 
-            converted_images.append(os.path.relpath(converted_file_path, dst_path).replace('\\','/'))
+            converted_images.append(os.path.relpath(converted_file_path, dst_path).replace('\\', '/'))
 
         scheme.images = converted_images
 
@@ -63,7 +63,7 @@ def __convert_resources(map_container, src_path, dst_path, log):
         if converted_file_path is None:
             continue
 
-        image.image = os.path.relpath(converted_file_path, dst_path).replace('\\','/')
+        image.image = os.path.relpath(converted_file_path, dst_path).replace('\\', '/')
         converted_images.append(image)
 
     map_container.images = converted_images

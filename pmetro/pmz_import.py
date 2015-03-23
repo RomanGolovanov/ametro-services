@@ -4,7 +4,7 @@ from pmetro import log
 from pmetro.file_utils import find_appropriate_file
 from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import un_bugger_for_float, default_if_empty, as_list, as_points, round_points_array, \
-    as_int_point_list, as_int_rect_list
+    as_int_point_list, as_int_rect_list, as_nullable_list
 from pmetro.ini_files import get_ini_attr_int, get_ini_attr_float, get_ini_attr_bool
 from pmetro.pmz_meta import load_metadata
 from pmetro.entities import MapScheme, MapSchemeLine, MapSchemeStation
@@ -216,7 +216,7 @@ class PmzTransportImporter(object):
         segments = []
         __, raw_segments = parse_station_and_delays(stations_text, drivings_text)
         for station_from, station_to, delay in raw_segments:
-            segments.append((stations[station_from][0], stations[station_to][0], delay ))
+            segments.append((stations[station_from][0], stations[station_to][0], delay))
 
         return segments
 
@@ -251,7 +251,6 @@ class PmzSchemeImporter(object):
 
     empty_coord = [(None, None), (0, 0), (-1, -1), (-2, -2)]
     empty_rect = [(None, None, None, None), (0, 0, 0, 0)]
-
 
     def __init__(self, path, meta, station_index, text_index_table, transports, logger=None):
         if not station_index:
@@ -295,18 +294,23 @@ class PmzSchemeImporter(object):
         diameter = get_ini_attr_float(ini, 'Options', 'StationDiameter', PmzSchemeImporter.default_diameter)
         is_upper_case = get_ini_attr_bool(ini, 'Options', 'UpperCase', True)
         is_word_wrap = get_ini_attr_bool(ini, 'Options', 'WordWrap', True)
+        is_vector = get_ini_attr(ini, 'Options', 'IsVector', '1') == '1'
         additional_node_section = get_ini_section(ini, 'AdditionalNodes')
 
         transports = default_if_empty(
-            as_list(get_ini_attr(ini, 'Options', 'Transports', '')),
+            as_nullable_list(get_ini_attr(ini, 'Options', 'Transports', None)),
             ['Metro'])
 
         default_transports = default_if_empty(
-            as_list(get_ini_attr(ini, 'Options', 'CheckedTransports', '')),
+            as_nullable_list(get_ini_attr(ini, 'Options', 'CheckedTransports', None)),
             ['Metro'])
 
-
-        display_name, type_name = suggest_scheme_display_name_and_type(name, self.__transport_index, self.__scheme_index, self.__text_index_table)
+        display_name, type_name = \
+            suggest_scheme_display_name_and_type(
+                name,
+                self.__transport_index,
+                self.__scheme_index,
+                self.__text_index_table)
 
         scheme = MapScheme()
         scheme.name = name
@@ -319,6 +323,7 @@ class PmzSchemeImporter(object):
         scheme.stations_diameter = diameter
         scheme.upper_case = is_upper_case
         scheme.word_wrap = is_word_wrap
+        scheme.is_vector = is_vector
         scheme.transports = [get_file_name_without_ext(x).lower() for x in transports]
         scheme.default_transports = [get_file_name_without_ext(x).lower() for x in default_transports]
         additional_nodes = self.__load_additional_nodes(file, additional_node_section)

@@ -67,6 +67,12 @@ def as_list(text='', splitter=','):
     return lst
 
 
+def as_nullable_list(text='', splitter=','):
+    if text is None:
+        return None
+    return as_list(text, splitter)
+
+
 def as_float_list(text='', splitter=','):
     if text is None or len(text) == 0:
         return None
@@ -143,7 +149,6 @@ def as_quoted_list(line, separator=','):
     ch = None
 
     while pos < length:
-        previous_ch = ch
         ch = line[pos]
         pos += 1
 
@@ -189,6 +194,8 @@ def round_points_array(value):
 
 def default_if_empty(element, defaults):
     if not element:
+        return defaults
+    if len(element) == 0:
         return defaults
     return element
 
