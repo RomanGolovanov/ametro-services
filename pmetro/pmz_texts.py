@@ -10,6 +10,9 @@ __WELL_KNOWN_WORDS = {
     'Фуникулер': 'Funicular',
 }
 
+TEXT_AS_PROPER_NAME = 0
+TEXT_AS_COMMON_LANGUAGE = 1
+
 
 def load_texts(map_container, text_index_table):
     default_text_table = text_index_table.get_text_table()
@@ -33,7 +36,7 @@ def translate_text_table_to_en(text_table):
                 transliterate.get_available_language_codes()))
 
     return TextTable(
-        [(text_id, translate_text_to_en(text, text_table.language_code)) for text_id, text in
+        [(text_id, translate_text_to_en(text, text_table.language_code), text_type) for text_id, text, text_type in
          text_table.texts],
         'en'
     )
@@ -55,19 +58,22 @@ class TextIndexTable(object):
     def __init__(self):
         self.texts = dict()
         self.texts_counter = dict()
-        self.counter = 10000
+        self.counter = 0
 
-    def as_text_id(self, text):
+    def as_text_id(self, text, text_type=TEXT_AS_PROPER_NAME):
         if text is None:
             return None
 
-        if text in self.texts:
-            self.texts_counter[text] += 1
-            return self.texts[text]
+        text_key = (text, text_type)
+
+        if text_key in self.texts:
+            self.texts_counter[text_key] += 1
+            return self.texts[text_key]
 
         text_id = self.counter
-        self.texts[text] = text_id
-        self.texts_counter[text] = 1
+
+        self.texts[text_key] = text_id
+        self.texts_counter[text_key] = 1
         self.counter += 1
 
         return text_id
@@ -77,7 +83,8 @@ class TextIndexTable(object):
 
     def get_text_table(self):
         return TextTable(
-            sorted([(value, key) for key, value in self.texts.items()], key=lambda x: x[0]),
+            sorted([(text_id, text, text_type) for (text, text_type), text_id in self.texts.items()],
+                   key=lambda x: x[0]),
             "ru"
         )
 
@@ -98,7 +105,7 @@ class StationIndex(object):
         self.id_counter = 0
 
     def register_station(self, line_name, station_name):
-        key = (line_name, station_name)
+        key = (line_name.lower(), station_name.lower())
         if key in self.registered_stations:
             raise ValueError('Station ' + station_name + ' on line ' + line_name + ' already registered')
 
@@ -107,13 +114,14 @@ class StationIndex(object):
             del self.pending_stations[key]
         else:
             station_id = self.id_counter
+            self.id_counter += 1
 
         self.registered_stations[key] = station_id
-        self.id_counter += 1
+
         return station_id
 
     def get_station_id(self, line_name, station_name):
-        key = (line_name, station_name)
+        key = (line_name.lower(), station_name.lower())
         if key in self.registered_stations:
             return self.registered_stations[key]
 
@@ -121,13 +129,13 @@ class StationIndex(object):
             station_id = self.pending_stations[key]
         else:
             station_id = self.id_counter
-            self.pending_stations[key] = station_id
             self.id_counter += 1
+            self.pending_stations[key] = station_id
 
         return station_id
 
     def find_station_id(self, line_name, station_name):
-        key = (line_name, station_name)
+        key = (line_name.lower(), station_name.lower())
         if key in self.registered_stations:
             return self.registered_stations[key]
 

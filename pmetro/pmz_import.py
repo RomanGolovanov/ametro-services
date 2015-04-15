@@ -3,7 +3,7 @@ import os
 from pmetro import log
 from pmetro.file_utils import find_appropriate_file
 from pmetro.graphics import cubic_interpolate
-from pmetro.helpers import un_bugger_for_float, default_if_empty, as_list, as_points, round_points_array, \
+from pmetro.helpers import un_bugger_for_float, default_if_empty, as_points, round_points_array, \
     as_int_point_list, as_int_rect_list, as_nullable_list
 from pmetro.ini_files import get_ini_attr_int, get_ini_attr_float, get_ini_attr_bool
 from pmetro.pmz_meta import load_metadata
@@ -15,7 +15,7 @@ from pmetro.pmz_transports import get_transport_type, StationsString, parse_stat
 from pmetro.file_utils import find_files_by_extension, get_file_name_without_ext
 from pmetro.helpers import as_dict, as_quoted_list
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_collection, get_ini_sections, get_ini_section
-from pmetro.pmz_texts import StationIndex, TextIndexTable, load_texts
+from pmetro.pmz_texts import StationIndex, TextIndexTable, load_texts, TEXT_AS_COMMON_LANGUAGE
 from pmetro.entities import MapMetadata, MapContainer, MapTransport, MapTransportLine
 from pmetro.pmz_transports import parse_line_delays
 
@@ -316,7 +316,7 @@ class PmzSchemeImporter(object):
         scheme.name = name
 
         scheme.name_text_id = self.__text_index_table.as_text_id(display_name)
-        scheme.type_text_id = self.__text_index_table.as_text_id(type_name)
+        scheme.type_text_id = self.__text_index_table.as_text_id(type_name, TEXT_AS_COMMON_LANGUAGE)
 
         scheme.images = self.__get_images_links(file, as_quoted_list(map_files))
         scheme.lines_width = line_width
