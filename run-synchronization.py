@@ -1,42 +1,17 @@
 # /usr/bin/env python3
 import datetime
-import os
 
-from globalization.builder import build_geonames_database
-from pmetro import ini_files
-from pmetro import pmz_transports
-from pmetro.catalog import MapCache, MapPublication
-from pmetro.log import CompositeLog, LogLevel, ConsoleLog, FileLog
+from pmetro.catalog import MapCache, MapImporter
+from settings import MAPS_SOURCE_URL, CACHE_PATH, TEMP_PATH, IMPORT_PATH, APP_LOG, FORCE_IMPORT, FORCE_REFRESH
 
+APP_LOG.message('')
+APP_LOG.message('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 
-base_dir = ''
+cache = MapCache(MAPS_SOURCE_URL, CACHE_PATH, TEMP_PATH, APP_LOG)
+cache.refresh(force=FORCE_REFRESH)
 
-cache_path = os.path.join(base_dir, 'cache')
-publication_path = os.path.join(base_dir, 'www')
-temp_path = os.path.join(base_dir, 'tmp')
+publication = MapImporter(IMPORT_PATH, TEMP_PATH, APP_LOG)
+publication.import_maps(CACHE_PATH, force=FORCE_IMPORT)
 
-build_geonames_database('geonames')
-
-pmetro_url = 'http://pub.skiif.org/pmetro-mirror/'
-
-log = CompositeLog([
-    ConsoleLog(level=LogLevel.Info),
-    FileLog(file_path='import.verbose.log', level=LogLevel.Debug),
-    FileLog(file_path='import.warnings.log', level=LogLevel.Warning),
-    FileLog(file_path='import.errors.log', level=LogLevel.Error)
-])
-
-ini_files.LOG = log
-pmz_transports.LOG = log
-
-log.message('')
-log.message('Synchronization started at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
-
-cache = MapCache(pmetro_url, cache_path, temp_path, log)
-cache.refresh(force=False)
-
-publication = MapPublication(publication_path, temp_path, log)
-publication.import_maps(cache_path, force=True)
-
-log.message('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+APP_LOG.message('Synchronization ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
 

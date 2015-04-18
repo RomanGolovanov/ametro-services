@@ -1,7 +1,9 @@
 import os
+import shutil
+
+from PIL import Image
 
 from pmetro import log
-from pmetro.file_utils import find_appropriate_file
 from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import un_bugger_for_float, default_if_empty, as_points, round_points_array, \
     as_int_point_list, as_int_rect_list, as_nullable_list
@@ -12,12 +14,103 @@ from pmetro.pmz_static import load_static
 from pmetro.pmz_schemes import create_line_index, create_scheme_index, create_transport_index, \
     suggest_scheme_display_name_and_type, create_visible_transfer_list
 from pmetro.pmz_transports import get_transport_type, StationsString, parse_station_and_delays
-from pmetro.file_utils import find_files_by_extension, get_file_name_without_ext
+from pmetro.file_utils import find_files_by_extension
 from pmetro.helpers import as_dict, as_quoted_list
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_collection, get_ini_sections, get_ini_section
 from pmetro.pmz_texts import StationIndex, TextIndexTable, load_texts, TEXT_AS_COMMON_LANGUAGE
 from pmetro.entities import MapMetadata, MapContainer, MapTransport, MapTransportLine
 from pmetro.pmz_transports import parse_line_delays
+from pmetro.file_utils import get_file_ext, get_file_name_without_ext, find_appropriate_file
+from pmetro.serialization import store_model
+from pmetro.vec2svg import convert_vec_to_svg
+
+
+def convert_map(map_info, src_path, dst_path, logger):
+    if not os.path.isdir(dst_path):
+        os.mkdir(dst_path)
+
+    logger.message("Begin processing %s" % src_path)
+
+    importer = PmzImporter(logger)
+
+    container = importer.import_pmz(src_path, map_info)
+
+    map_info['delays'] = container.meta.delays
+    map_info['transports'] = container.meta.transport_types
+
+    __convert_resources(container, src_path, dst_path, logger)
+
+    store_model(container, dst_path)
+
+
+def __convert_resources(map_container, src_path, dst_path, logger):
+    res_path = os.path.join(dst_path, 'res')
+    if not os.path.isdir(res_path):
+        os.mkdir(res_path)
+
+    schemes_path = os.path.join(res_path, 'schemes')
+    if not os.path.isdir(schemes_path):
+        os.mkdir(schemes_path)
+    for scheme in map_container.schemes:
+        converted_images = []
+        for scheme_image in scheme.images:
+            if scheme_image is None:
+                continue
+
+            converted_file_path = __convert_static_file(src_path, scheme_image, schemes_path, logger)
+            if converted_file_path is None:
+                continue
+
+            converted_images.append(os.path.relpath(converted_file_path, dst_path).replace('\\', '/'))
+
+        scheme.images = converted_images
+
+    images_path = os.path.join(res_path, 'stations')
+    if not os.path.isdir(images_path):
+        os.mkdir(images_path)
+
+    converted_images = []
+    for image in map_container.images:
+
+        if image.image is None:
+            continue
+
+        converted_file_path = __convert_static_file(src_path, image.image, images_path, logger)
+        if converted_file_path is None:
+            continue
+
+        image.image = os.path.relpath(converted_file_path, dst_path).replace('\\', '/')
+        converted_images.append(image)
+
+    map_container.images = converted_images
+
+
+def __convert_static_file(src_path, src_name, dst_path, logger):
+    __FILE_CONVERTERS = {
+        'vec': (convert_vec_to_svg, 'svg'),
+        'bmp': (lambda src, dst, l: Image.open(src).save(dst), 'png'),
+        'gif': (lambda src, dst, l: Image.open(src).save(dst), 'png'),
+        'png': (lambda src, dst, l: shutil.copy(src, dst), 'png')
+    }
+
+    src_file_path = find_appropriate_file(os.path.join(src_path, src_name))
+
+    if not os.path.isfile(src_file_path):
+        logger.error('Not found image file %s' % src_file_path)
+        return None
+
+    src_file_ext = get_file_ext(src_file_path)
+    if src_file_ext in __FILE_CONVERTERS:
+        new_ext = __FILE_CONVERTERS[src_file_ext][1]
+        dst_file_path = os.path.join(dst_path, get_file_name_without_ext(src_name.lower()) + '.' + new_ext)
+        logger.debug('Convert %s' % src_file_path)
+        __FILE_CONVERTERS[src_file_ext][0](src_file_path, dst_file_path, logger)
+    else:
+        logger.warning('No converters found for file %s, copy file' % src_file_path)
+        dst_file_path = os.path.join(dst_path, src_name.lower())
+        shutil.copy(src_file_path, dst_file_path)
+
+    return dst_file_path
 
 
 class PmzImporter(object):
@@ -29,14 +122,12 @@ class PmzImporter(object):
 
     def import_pmz(self, path, map_info):
 
-        meta = MapMetadata(map_info)
-
         station_index = StationIndex()
         text_index_table = TextIndexTable()
 
         transport_importer = PmzTransportImporter(
             path,
-            meta,
+            map_info['file'],
             station_index,
             text_index_table
         )
@@ -49,7 +140,6 @@ class PmzImporter(object):
 
         scheme_importer = PmzSchemeImporter(
             path,
-            meta,
             station_index,
             text_index_table,
             imported_transports,
@@ -59,7 +149,7 @@ class PmzImporter(object):
         imported_schemes = scheme_importer.import_schemes()
 
         container = MapContainer()
-        container.meta = meta
+        container.meta = MapMetadata(map_info, map_info['description'], map_info['comments'])
         container.transports = imported_transports
         container.schemes = imported_schemes
 
@@ -98,14 +188,14 @@ class PmzImporter(object):
 
 
 class PmzTransportImporter(object):
-    def __init__(self, path, meta, station_index, text_index_table):
+    def __init__(self, path, map_file_name, station_index, text_index_table):
         if not station_index:
             station_index = StationIndex()
         if not text_index_table:
             text_index_table = TextIndexTable()
 
         self.__path = path
-        self.__meta = meta
+        self.__map_file_name = map_file_name
         self.__station_index = station_index
         self.__text_index_table = text_index_table
 
@@ -126,7 +216,7 @@ class PmzTransportImporter(object):
         name = get_file_name_without_ext(file).lower()
         return MapTransport(
             name,
-            get_transport_type(self.__meta.file, name, ini),
+            get_transport_type(self.__map_file_name, name, ini),
             self.__import_lines(ini),
             self.__import_transfers(ini)
         )
@@ -252,7 +342,7 @@ class PmzSchemeImporter(object):
     empty_coord = [(None, None), (0, 0), (-1, -1), (-2, -2)]
     empty_rect = [(None, None, None, None), (0, 0, 0, 0)]
 
-    def __init__(self, path, meta, station_index, text_index_table, transports, logger=None):
+    def __init__(self, path, station_index, text_index_table, transports, logger=None):
         if not station_index:
             station_index = StationIndex()
         if not text_index_table:
@@ -261,7 +351,6 @@ class PmzSchemeImporter(object):
             logger = log.ConsoleLog()
 
         self.__path = path
-        self.__meta = meta
         self.__station_index = station_index
         self.__text_index_table = text_index_table
 

@@ -1,16 +1,14 @@
+
 class MapMetadata(object):
-    def __init__(self, map_info):
-        self.map_id = map_info['city']
-        self.city = map_info['city']
-        self.country = map_info['country']
-        self.iso = map_info['iso']
+    def __init__(self, map_info, description, comments):
+        self.map_id = map_info['file']
+        self.geo_name_id = map_info['id']
         self.file = map_info['file']
         self.latitude = map_info['latitude']
         self.longitude = map_info['longitude']
         self.version = map_info['version']
-        self.geo_name_id = map_info['id']
-        self.description = map_info['description']
-        self.comments = map_info['comments']
+        self.description = description
+        self.comments = comments
         self.delays = []
         self.transport_types = []
         self.transports = []
