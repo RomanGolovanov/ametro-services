@@ -4,6 +4,7 @@ class MapMetadata(object):
         self.map_id = map_info['file']
         self.geo_name_id = map_info['id']
         self.file = map_info['file']
+        self.timestamp = map_info['timestamp']
         self.latitude = map_info['latitude']
         self.longitude = map_info['longitude']
         self.version = map_info['version']
