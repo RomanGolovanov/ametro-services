@@ -10,8 +10,9 @@ class GeoNamesCity(object):
         self.search = db_record[3]
         self.latitude = db_record[4]
         self.longitude = db_record[5]
-        self.country = db_record[6]
-        self.iso = db_record[7]
+        self.country_geoname_id = db_record[6]
+        self.country = db_record[7]
+        self.iso = db_record[8]
 
 
 class GeoNamesCountry(object):
@@ -19,6 +20,12 @@ class GeoNamesCountry(object):
         self.geoname_id = db_record[0]
         self.name = db_record[1]
         self.iso = db_record[2]
+
+
+class GeoName(object):
+    def __init__(self, geoname_id, name):
+        self.geoname_id = geoname_id
+        self.name = name
 
 
 class GeoNamesProvider(object):
@@ -58,6 +65,42 @@ class GeoNamesProvider(object):
 
         return None
 
+    def get_city_info(self, geoname_id):
+        self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
+                            '       city.latitude, city.longitude, country.name, country.iso ' +
+                            'FROM city ' +
+                            'INNER JOIN country ON country.iso = city.country_iso ' +
+                            'WHERE city.geoname_id = ?', (geoname_id,))
+
+        return GeoNamesCity(self.cursor.fetchone())
+
+    def get_cities_info(self, geoname_ids):
+        self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
+                            '       city.latitude, city.longitude, country.geoname_id, country.name, country.iso ' +
+                            'FROM city ' +
+                            'INNER JOIN country ON country.iso = city.country_iso ' +
+                            'WHERE city.geoname_id IN ({0})'.format(','.join(map(str, geoname_ids))))
+
+        return [GeoNamesCity(c) for c in self.cursor.fetchall()]
+
+    def get_names_for_language(self, geoname_ids, language_code):
+        self.cursor.execute('SELECT geoname_id, name, is_pref FROM alt_name ' +
+                            'WHERE geoname_id IN ({0}) AND language = ?'.format(','.join(map(str, geoname_ids))),
+                            (language_code,))
+
+        items = self.cursor.fetchall()
+        names = dict()
+        for geoname_id in geoname_ids:
+            preferred_item = [i for i in items if i[0] == geoname_id and i[2] == 1]
+            if any(preferred_item):
+                names[geoname_id] = preferred_item[0][1]
+            else:
+                item = [i for i in items if i[0] == geoname_id]
+                if any(item):
+                    names[geoname_id] = item[0][1]
+
+        return names
+
     def __find_cities(self, name):
         name = name.lower()
         self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
@@ -68,15 +111,6 @@ class GeoNamesProvider(object):
                             ('%' + name + '%',))
 
         return [GeoNamesCity(c) for c in self.cursor.fetchall()]
-
-    def get_city_info(self, geoname_id):
-        self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
-                            '       city.latitude, city.longitude, country.name, country.iso ' +
-                            'FROM city ' +
-                            'INNER JOIN country ON country.iso = city.country_iso ' +
-                            'WHERE city.geoname_id = ?', (geoname_id,))
-
-        return GeoNamesCity(self.cursor.fetchone())
 
     @staticmethod
     def __find_geo_name_in_country(cities, name):

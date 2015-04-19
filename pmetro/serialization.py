@@ -35,10 +35,6 @@ def store_model(map_container, dst_path):
         dict((text_id, text_type) for (text_id, text, text_type) in map_container.texts[0].texts),
         os.path.join(dst_path, 'texts/meta.json'))
 
-
-
-
-
     transports_path = os.path.join(dst_path, 'transports')
     if not os.path.isdir(transports_path):
         os.mkdir(transports_path)

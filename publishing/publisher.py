@@ -57,6 +57,8 @@ def __rebuild_index(publishing_path):
 def __create_locales(geoname_ids):
     geonames_provider = GeoNamesProvider()
 
+    cities = geonames_provider.get_cities_info(geoname_ids)
+
     localizations = dict(
         locales=dict(
             en={
