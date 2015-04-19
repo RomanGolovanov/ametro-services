@@ -195,7 +195,6 @@ class MapCache(object):
             timestamp = mktime((date(1899, 12, 30) + timedelta(days=int(el.find('Zip').attrib['Date']))).timetuple())
             yield {'file': file_name, 'size': size, 'timestamp': timestamp, 'city': city_name, 'country': country_name}
 
-
     def __download_map(self, map_item):
         map_file = map_item['file']
         tmp_path = os.path.join(self.__cache_path, map_file + '.download')
