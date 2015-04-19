@@ -47,8 +47,10 @@ class GeoNamesProvider(object):
         if any(result):
             return GeoNamesCountry(result[0])
 
-        self.cursor.execute('SELECT geoname_id FROM alt_name WHERE search_name LIKE ?', (name, ))
-        for geoname_id in [x[0] for x in self.cursor.fetchall()]:
+        self.cursor.execute('SELECT geoname_id, is_pref FROM alt_name WHERE search_name LIKE ?', (name, ))
+        items = self.cursor.fetchall()
+
+        for geoname_id in [x[0] for x in items]:
             self.cursor.execute('SELECT geoname_id, name, iso FROM country WHERE geoname_id = ?', (geoname_id,))
             result = self.cursor.fetchall()
             if any(result):

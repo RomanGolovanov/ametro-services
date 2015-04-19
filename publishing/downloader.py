@@ -62,7 +62,7 @@ class MapDownloader(object):
 
                 city_info = geonames_provider.find_city(city_name, country_name)
                 if city_info is None:
-                    self.__log.info('Not found %s, [%s]/[%s], skipped' % (new_map['file'], city_name, country_name))
+                    self.__log.warning('Not found %s, [%s]/[%s], skipped' % (new_map['file'], city_name, country_name))
                     continue
 
                 self.__log.debug('Recognised %s,%s,%s in [%s]/[%s]' % (

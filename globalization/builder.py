@@ -14,9 +14,10 @@ __CREATE_COUNTRY_TABLE_QUERY = 'CREATE TABLE country (' + \
 __CREATE_COUNTRY_INDEX_QUERY = 'CREATE INDEX IX_county_search ON country (search_name)'
 __INSERT_COUNTRY_TABLE_QUERY = 'INSERT INTO country VALUES (?,?,?,?,?)'
 
-__CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (geoname_id int, language text, name text, search_name text)'
+__CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (' \
+                                '   geoname_id int, language text, name text, search_name text, is_pref int)'
 __CREATE_ALT_NAME_INDEX_QUERY = 'CREATE INDEX IX_city_search ON country (search_name)'
-__INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?,?)'
+__INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?,?,?)'
 
 __MAX_BATCH_SIZE = 10000
 
@@ -24,7 +25,7 @@ __CITIES_GEO_NAME_FILE = 'cities1000.zip'
 __COUNTRIES_GEO_NAME_FILE = 'countryInfo.zip'
 __ALT_GEO_NAME_FILE = 'alternateNames.zip'
 
-__ALT_LANGUAGE_SET = {'en', 'ru', 'es', 'it', 'fr', 'ja', 'fi', 'pl', 'de'}
+__ALT_LANGUAGE_SET = {'en', 'ru'}
 
 
 def build_geonames_database(geonames_path, force=False):
@@ -128,4 +129,4 @@ def __parse_alt_name(text, context):
         return None
     if int(geoname_id) not in context:
         return None
-    return geoname_id, language, name, name.lower()
+    return geoname_id, language, name, name.lower(), is_pref

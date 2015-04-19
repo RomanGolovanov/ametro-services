@@ -10,7 +10,7 @@ class MapEncoder(JSONEncoder):
 
 
 def as_json(obj):
-    return json.dumps(obj, ensure_ascii=False, cls=MapEncoder, indent=4)
+    return json.dumps(obj, ensure_ascii=False, cls=MapEncoder, indent=4, sort_keys=True)
 
 
 def write_as_json_file(obj, path):
