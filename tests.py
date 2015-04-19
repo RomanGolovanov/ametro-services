@@ -1,11 +1,12 @@
+from globalization.builder import build_geonames_database
 from globalization.provider import GeoNamesProvider
 from pmetro.log import ConsoleLog
 from pmetro.pmz_import import convert_map
 
-# build_geonames_database(force=True)
+#build_geonames_database('geonames', force=True)
 
 # map_info = \
-#     {
+# {
 #         'city': 'Amsterdam',
 #         'comments': None,
 #         'latitude': 52.37403,
@@ -29,11 +30,4 @@ from pmetro.serialization import as_json
 
 geonames_provider = GeoNamesProvider()
 
-cities = geonames_provider.get_cities_info([325363, 3469058, 1508291])
-
-#print(as_json(cities ))
-
-
-
-print(as_json(geonames_provider.get_names_for_language([c.geoname_id for c in cities], 'en')))
-print(as_json(geonames_provider.get_names_for_language([c.geoname_id for c in cities], 'ru')))
+print(as_json(geonames_provider.get_names_for_language([614540], 'en')))

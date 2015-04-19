@@ -54,7 +54,7 @@ class GeoNamesProvider(object):
         if any(result):
             return GeoNamesCountry(result[0])
 
-        self.cursor.execute('SELECT geoname_id, is_pref FROM alt_name WHERE search_name LIKE ?', (name, ))
+        self.cursor.execute('SELECT geoname_id FROM alt_name WHERE search_name LIKE ? ORDER BY priority DESC', (name, ))
         items = self.cursor.fetchall()
 
         for geoname_id in [x[0] for x in items]:
@@ -67,7 +67,7 @@ class GeoNamesProvider(object):
 
     def get_city_info(self, geoname_id):
         self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
-                            '       city.latitude, city.longitude, country.name, country.iso ' +
+                            '       city.latitude, city.longitude, country.geoname_id, country.name, country.iso ' +
                             'FROM city ' +
                             'INNER JOIN country ON country.iso = city.country_iso ' +
                             'WHERE city.geoname_id = ?', (geoname_id,))
@@ -84,27 +84,23 @@ class GeoNamesProvider(object):
         return [GeoNamesCity(c) for c in self.cursor.fetchall()]
 
     def get_names_for_language(self, geoname_ids, language_code):
-        self.cursor.execute('SELECT geoname_id, name, is_pref FROM alt_name ' +
+        self.cursor.execute('SELECT geoname_id, name, priority FROM alt_name ' +
                             'WHERE geoname_id IN ({0}) AND language = ?'.format(','.join(map(str, geoname_ids))),
                             (language_code,))
 
         items = self.cursor.fetchall()
         names = dict()
         for geoname_id in geoname_ids:
-            preferred_item = [i for i in items if i[0] == geoname_id and i[2] == 1]
-            if any(preferred_item):
-                names[geoname_id] = preferred_item[0][1]
-            else:
-                item = [i for i in items if i[0] == geoname_id]
-                if any(item):
-                    names[geoname_id] = item[0][1]
+            geoname_items = sorted([i for i in items if i[0] == geoname_id], key=lambda x: 0-x[2])
+            if any(geoname_items):
+                names[geoname_id] = geoname_items[0][1]
 
         return names
 
     def __find_cities(self, name):
         name = name.lower()
         self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
-                            '       city.latitude, city.longitude, country.name, country.iso ' +
+                            '       city.latitude, city.longitude, country.geoname_id, country.name, country.iso ' +
                             'FROM city ' +
                             'INNER JOIN country ON country.iso = city.country_iso ' +
                             'WHERE LOWER(city.search_name) LIKE ?',

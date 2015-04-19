@@ -18,6 +18,9 @@ FORCE_IMPORT = False
 
 MAPS_SOURCE_URL = 'http://pub.skiif.org/pmetro-mirror/'
 
+INDEX_LANGUAGE_SET = {'en', 'ru'}
+
+
 base_dir = ''
 
 CACHE_PATH = os.path.join(base_dir, 'cache')

@@ -3,6 +3,7 @@ import os
 import sqlite3
 import zipfile
 
+
 __CREATE_CITY_TABLE_QUERY = 'CREATE TABLE city (' + \
                             '   geoname_id int, name text, ascii_name text, search_name text, latitude real, ' + \
                             '   longitude real, country_iso text, population int)'
@@ -15,7 +16,7 @@ __CREATE_COUNTRY_INDEX_QUERY = 'CREATE INDEX IX_county_search ON country (search
 __INSERT_COUNTRY_TABLE_QUERY = 'INSERT INTO country VALUES (?,?,?,?,?)'
 
 __CREATE_ALT_NAME_TABLE_QUERY = 'CREATE TABLE alt_name (' \
-                                '   geoname_id int, language text, name text, search_name text, is_pref int)'
+                                '   geoname_id int, language text, name text, search_name text, priority int)'
 __CREATE_ALT_NAME_INDEX_QUERY = 'CREATE INDEX IX_city_search ON country (search_name)'
 __INSERT_ALT_NAME_TABLE_QUERY = 'INSERT INTO alt_name VALUES (?,?,?,?,?)'
 
@@ -25,7 +26,9 @@ __CITIES_GEO_NAME_FILE = 'cities1000.zip'
 __COUNTRIES_GEO_NAME_FILE = 'countryInfo.zip'
 __ALT_GEO_NAME_FILE = 'alternateNames.zip'
 
-__ALT_LANGUAGE_SET = {'en', 'ru'}
+__INDEX_LANGUAGE_SET = {'en', 'ru'}
+
+__IGNORE_LIST = {1795564, 2928809, 8555918, 6691781}
 
 
 def build_geonames_database(geonames_path, force=False):
@@ -108,25 +111,52 @@ def __parse_city_record(text, context):
 
     search = [name.lower(), ascii_name.lower(), alternate_names.lower()]
 
-    return geoname_id, name, ascii_name, \
-           ','.join(search), \
-           latitude, longitude, country_code, population
+    if not geoname_id:
+        return None
+
+    geoname_id = int(geoname_id)
+    if geoname_id in __IGNORE_LIST:
+        return None
+
+    return geoname_id, name, ascii_name, ','.join(search), latitude, longitude, country_code, population
 
 
 def __parse_country_record(text, context):
     iso, iso3, iso_numeric, fips, name, capital, area_sq_km, population, continent, \
     tld, currency_code, currency_name, phone, postal_code_format, postal_code_regex, \
-    languages, geo_name_id, neighbours, equivalent_fips \
+    languages, geoname_id, neighbours, equivalent_fips \
         = str(text).split('\t')
-    return geo_name_id, iso, name, capital, name.lower()
+
+    if not geoname_id:
+        return None
+
+    geoname_id = int(geoname_id)
+    if geoname_id in __IGNORE_LIST:
+        return None
+    return geoname_id, iso, name, capital, name.lower()
 
 
 def __parse_alt_name(text, context):
     alt_name_id, geoname_id, language, name, is_pref, is_short, is_colloquial, is_historic = str(text).split('\t')
+    if not geoname_id:
+        return None
+
+    geoname_id = int(geoname_id)
+    if geoname_id in __IGNORE_LIST:
+        return None
     if is_colloquial == '1' or is_historic == '1':
         return None
-    if language not in __ALT_LANGUAGE_SET:
+    if language not in __INDEX_LANGUAGE_SET:
         return None
     if int(geoname_id) not in context:
         return None
-    return geoname_id, language, name, name.lower(), is_pref
+
+    priority = 0
+    if is_pref == '1':
+        priority+=2
+
+    if is_short == '1':
+        priority+=1
+
+    return geoname_id, language, name, name.lower(), priority
+

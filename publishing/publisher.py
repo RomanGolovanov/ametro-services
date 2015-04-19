@@ -7,6 +7,7 @@ from globalization.provider import GeoNamesProvider
 
 from pmetro.file_utils import get_file_ext
 from pmetro.serialization import write_as_json_file
+from settings import INDEX_LANGUAGE_SET
 
 
 class MapIndexEntity(object):
@@ -59,24 +60,20 @@ def __create_locales(geoname_ids):
 
     cities = geonames_provider.get_cities_info(geoname_ids)
 
-    localizations = dict(
-        locales=dict(
-            en={
+    all_ids = set([c.geoname_id for c in cities] + [c.country_geoname_id for c in cities])
 
-            },
-            ru={
+    locales = dict()
+    for language_code in INDEX_LANGUAGE_SET:
+        names = geonames_provider.get_names_for_language(all_ids, language_code)
+        locale = dict()
+        for city_info in cities:
+            city_name = names.get(city_info.geoname_id, city_info.name)
+            country_name = names.get(city_info.country_geoname_id, city_info.country)
 
-            },
-            jp={
+            locale[city_info.geoname_id] = (city_name, country_name)
+        locales[language_code] = locale
 
-            },
-            it={
-
-            }
-        ),
-        default_locale='en'
-    )
-    return localizations
+    return dict(locales=locales, default_locale='en')
 
 
 def __create_index(maps_path):
