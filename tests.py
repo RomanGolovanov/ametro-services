@@ -11,7 +11,7 @@ map_info = \
         'country': 'Netherlands',
         'description': 'Схема от 17.12.2007г.',
         'size': 25516,
-        'version': 39947,
+        'timestamp': 39947,
         'map_id': 'Amsterdam',
         'longitude': 4.88969,
         'file': 'Amsterdam.zip',
@@ -22,4 +22,4 @@ src = 'src'
 dst = 'dst'
 logger = ConsoleLog()
 
-convert_map(map_info, src, dst, logger)
+convert_map(100500, 'Amsterdam.zip', 1301864400, src, dst, logger)

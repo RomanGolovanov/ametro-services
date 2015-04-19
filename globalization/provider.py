@@ -58,14 +58,23 @@ class GeoNamesProvider(object):
 
     def __find_cities(self, name):
         name = name.lower()
-        cities = self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
-                                     '       city.latitude, city.longitude, country.name, country.iso ' +
-                                     'FROM city ' +
-                                     'INNER JOIN country ON country.iso = city.country_iso ' +
-                                     'WHERE LOWER(city.search_name) LIKE ?',
-                                     ('%' + name + '%',))
+        self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
+                            '       city.latitude, city.longitude, country.name, country.iso ' +
+                            'FROM city ' +
+                            'INNER JOIN country ON country.iso = city.country_iso ' +
+                            'WHERE LOWER(city.search_name) LIKE ?',
+                            ('%' + name + '%',))
 
         return [GeoNamesCity(c) for c in self.cursor.fetchall()]
+
+    def get_city_info(self, geoname_id):
+        self.cursor.execute('SELECT city.geoname_id, city.name, city.ascii_name, city.search_name, ' +
+                            '       city.latitude, city.longitude, country.name, country.iso ' +
+                            'FROM city ' +
+                            'INNER JOIN country ON country.iso = city.country_iso ' +
+                            'WHERE city.geoname_id = ?', (geoname_id,))
+
+        return GeoNamesCity(self.cursor.fetchone())
 
     @staticmethod
     def __find_geo_name_in_country(cities, name):

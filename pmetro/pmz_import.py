@@ -1,20 +1,22 @@
 import os
 import shutil
+import uuid
 
 from PIL import Image
+from globalization.provider import GeoNamesProvider
 
 from pmetro import log
 from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import un_bugger_for_float, default_if_empty, as_points, round_points_array, \
     as_int_point_list, as_int_rect_list, as_nullable_list
-from pmetro.ini_files import get_ini_attr_int, get_ini_attr_float, get_ini_attr_bool
+from pmetro.ini_files import get_ini_attr_int, get_ini_attr_float, get_ini_attr_bool, get_ini_composite_attr
 from pmetro.pmz_meta import load_metadata
 from pmetro.entities import MapScheme, MapSchemeLine, MapSchemeStation
 from pmetro.pmz_static import load_static
 from pmetro.pmz_schemes import create_line_index, create_scheme_index, create_transport_index, \
     suggest_scheme_display_name_and_type, create_visible_transfer_list
 from pmetro.pmz_transports import get_transport_type, StationsString, parse_station_and_delays
-from pmetro.file_utils import find_files_by_extension
+from pmetro.file_utils import find_files_by_extension, find_file_by_extension
 from pmetro.helpers import as_dict, as_quoted_list
 from pmetro.ini_files import deserialize_ini, get_ini_attr, get_ini_attr_collection, get_ini_sections, get_ini_section
 from pmetro.pmz_texts import StationIndex, TextIndexTable, load_texts, TEXT_AS_COMMON_LANGUAGE
@@ -25,22 +27,29 @@ from pmetro.serialization import store_model
 from pmetro.vec2svg import convert_vec_to_svg
 
 
-def convert_map(map_info, src_path, dst_path, logger):
-    if not os.path.isdir(dst_path):
-        os.mkdir(dst_path)
-
+def convert_map(geoname_id, file_name, timestamp, src_path, dst_path, logger):
     logger.message("Begin processing %s" % src_path)
-
     importer = PmzImporter(logger)
-
-    container = importer.import_pmz(src_path, map_info)
-
-    map_info['delays'] = container.meta.delays
-    map_info['transports'] = container.meta.transport_types
-
+    container = importer.import_pmz(src_path, geoname_id, file_name, timestamp)
     __convert_resources(container, src_path, dst_path, logger)
-
     store_model(container, dst_path)
+
+
+def __extract_map_info(self, map_path, map_item):
+    ini = deserialize_ini(find_file_by_extension(map_path, '.cty'))
+    name = get_ini_attr(ini, 'Options', 'Name')
+    comments = get_ini_composite_attr(ini, 'Options', 'Comment')
+    authors = get_ini_composite_attr(ini, 'Options', 'MapAuthors')
+
+    if name is None:
+        name = uuid.uuid1().hex
+        self.__log.warning('Empty NAME map property in file \'%s\', used UID %s' % (ini['__FILE_NAME__'], name))
+
+    map_item['map_id'] = name
+    if comments is not None:
+        map_item['comments'] = comments
+    if authors is not None:
+        map_item['description'] = authors
 
 
 def __convert_resources(map_container, src_path, dst_path, logger):
@@ -119,15 +128,16 @@ class PmzImporter(object):
             logger = log.ConsoleLog()
 
         self.__logger = logger
+        self.__geoname_provider = GeoNamesProvider()
 
-    def import_pmz(self, path, map_info):
+    def import_pmz(self, path, geoname_id, file_name, timestamp):
 
         station_index = StationIndex()
         text_index_table = TextIndexTable()
 
         transport_importer = PmzTransportImporter(
             path,
-            map_info['file'],
+            file_name,
             station_index,
             text_index_table
         )
@@ -148,8 +158,11 @@ class PmzImporter(object):
 
         imported_schemes = scheme_importer.import_schemes()
 
+        city_info = self.__geoname_provider.get_city_info(geoname_id)
+
         container = MapContainer()
-        container.meta = MapMetadata(map_info, map_info['description'], map_info['comments'])
+        container.meta = MapMetadata(geoname_id, file_name, timestamp, city_info.latitude, city_info.longitude, None,
+                                     'Imported from http://pmetro.su')
         container.transports = imported_transports
         container.schemes = imported_schemes
 
