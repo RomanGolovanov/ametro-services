@@ -4,10 +4,10 @@ import json
 import os
 import shutil
 from globalization.provider import GeoNamesProvider
+from globalization.settings import LANGUAGE_SET
 
 from pmetro.file_utils import get_file_ext
 from pmetro.serialization import write_as_json_file
-from settings import INDEX_LANGUAGE_SET
 
 
 class MapIndexEntity(object):
@@ -42,6 +42,10 @@ def __publish_maps(maps_path, publishing_path):
 
 
 def __rebuild_index(publishing_path):
+    locales_path = os.path.join(publishing_path, 'locales')
+    if not os.path.isdir(locales_path):
+        os.mkdir(locales_path)
+
     maps_index = sorted(__create_index(publishing_path), key=lambda k: k.uid)
     write_as_json_file(maps_index, os.path.join(publishing_path, 'index.json'))
 
@@ -49,10 +53,10 @@ def __rebuild_index(publishing_path):
 
     for locale in localizations['locales']:
         write_as_json_file(localizations['locales'][locale],
-                           os.path.join(publishing_path, 'locale.{0}.json'.format(locale)))
+                           os.path.join(locales_path, '{0}.json'.format(locale)))
 
     write_as_json_file(localizations['locales'][localizations['default_locale']],
-                       os.path.join(publishing_path, 'locale.default.json'))
+                       os.path.join(locales_path, 'default.json'))
 
 
 def __create_locales(geoname_ids):
@@ -63,14 +67,30 @@ def __create_locales(geoname_ids):
     all_ids = set([c.geoname_id for c in cities] + [c.country_geoname_id for c in cities])
 
     locales = dict()
-    for language_code in INDEX_LANGUAGE_SET:
+    for language_code in LANGUAGE_SET:
         names = geonames_provider.get_names_for_language(all_ids, language_code)
         locale = dict()
         for city_info in cities:
-            city_name = names.get(city_info.geoname_id, city_info.name)
-            country_name = names.get(city_info.country_geoname_id, city_info.country)
 
-            locale[city_info.geoname_id] = (city_name, country_name)
+            defaults = []
+            if city_info.geoname_id in names:
+                city_name = names[city_info.geoname_id]
+            else:
+                city_name = city_info.name
+                defaults.append('city')
+
+            if city_info.country_geoname_id in names:
+                country_name = names[city_info.country_geoname_id]
+            else:
+                country_name = city_info.country
+                defaults.append('country')
+
+            locale[city_info.geoname_id] = (
+                city_name,
+                country_name,
+                city_info.iso,
+                ','.join(defaults) if any(defaults) else None)
+
         locales[language_code] = locale
 
     return dict(locales=locales, default_locale='en')

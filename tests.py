@@ -3,7 +3,7 @@ from globalization.provider import GeoNamesProvider
 from pmetro.log import ConsoleLog
 from pmetro.pmz_import import convert_map
 
-#build_geonames_database('geonames', force=True)
+build_geonames_database('geonames', force=True)
 
 # map_info = \
 # {

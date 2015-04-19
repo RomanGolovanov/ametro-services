@@ -2,6 +2,7 @@ import codecs
 import os
 import sqlite3
 import zipfile
+from globalization.settings import LANGUAGE_SET
 
 
 __CREATE_CITY_TABLE_QUERY = 'CREATE TABLE city (' + \
@@ -26,7 +27,6 @@ __CITIES_GEO_NAME_FILE = 'cities1000.zip'
 __COUNTRIES_GEO_NAME_FILE = 'countryInfo.zip'
 __ALT_GEO_NAME_FILE = 'alternateNames.zip'
 
-__INDEX_LANGUAGE_SET = {'en', 'ru'}
 
 __IGNORE_LIST = {1795564, 2928809, 8555918, 6691781}
 
@@ -146,7 +146,7 @@ def __parse_alt_name(text, context):
         return None
     if is_colloquial == '1' or is_historic == '1':
         return None
-    if language not in __INDEX_LANGUAGE_SET:
+    if language not in LANGUAGE_SET:
         return None
     if int(geoname_id) not in context:
         return None
