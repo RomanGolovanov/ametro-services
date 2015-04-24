@@ -27,9 +27,9 @@ from pmetro.serialization import store_model
 from pmetro.vec2svg import convert_vec_to_svg
 
 
-def convert_map(geoname_id, file_name, timestamp, src_path, dst_path, logger):
+def convert_map(geoname_id, file_name, timestamp, src_path, dst_path, logger, geoname_provider):
     logger.message("Begin processing %s" % src_path)
-    importer = PmzImporter(logger)
+    importer = PmzImporter(logger, geoname_provider)
     container = importer.import_pmz(src_path, geoname_id, file_name, timestamp)
     __convert_resources(container, src_path, dst_path, logger)
     store_model(container, dst_path)
@@ -123,12 +123,9 @@ def __convert_static_file(src_path, src_name, dst_path, logger):
 
 
 class PmzImporter(object):
-    def __init__(self, logger):
-        if not logger:
-            logger = log.ConsoleLog()
-
+    def __init__(self, logger, geoname_provider):
         self.__logger = logger
-        self.__geoname_provider = GeoNamesProvider()
+        self.__geoname_provider = geoname_provider
 
     def import_pmz(self, path, geoname_id, file_name, timestamp):
 

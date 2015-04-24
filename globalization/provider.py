@@ -1,6 +1,4 @@
-import os
 import sqlite3
-
 
 class GeoNamesCity(object):
     def __init__(self, db_record):
@@ -29,8 +27,8 @@ class GeoName(object):
 
 
 class GeoNamesProvider(object):
-    def __init__(self):
-        self.cnn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'geonames.db'))
+    def __init__(self, geonames_db):
+        self.cnn = sqlite3.connect(geonames_db)
         self.cursor = self.cnn.cursor()
 
     def find_city(self, name, country_name):

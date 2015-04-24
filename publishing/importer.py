@@ -10,13 +10,14 @@ from publishing.catalog import load_catalog, MapCatalog
 
 
 class MapImporter(object):
-    def __init__(self, import_path, temp_path, log=EmptyLog()):
+    def __init__(self, import_path, temp_path, log, geoname_provider):
         self.__log = log
         self.__import_path = import_path
         self.__index_path = os.path.join(import_path, 'index.json')
         self.__timestamp_path = os.path.join(import_path, 'timestamp.json')
         self.__countries_path = os.path.join(import_path, 'countries.json')
         self.__temp_path = temp_path
+        self.__geoname_provider = geoname_provider
 
     @staticmethod
     def __create_map_description(map_info_list):
@@ -73,7 +74,7 @@ class MapImporter(object):
                 os.mkdir(converted_folder)
 
             convert_map(map_info['geoname_id'], map_info['file'], map_info['timestamp'], map_folder, converted_folder,
-                        self.__log)
+                        self.__log, self.__geoname_provider)
 
             zip_folder(converted_folder, importing_map_path)
             map_info['size'] = os.path.getsize(importing_map_path)

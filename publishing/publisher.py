@@ -3,9 +3,8 @@ import codecs
 import json
 import os
 import shutil
-from globalization.provider import GeoNamesProvider
-from globalization.settings import LANGUAGE_SET
 
+from globalization.settings import LANGUAGE_SET
 from pmetro.file_utils import get_file_ext
 from pmetro.serialization import write_as_json_file
 
@@ -22,9 +21,9 @@ class MapIndexEntity(object):
         self.longitude = longitude
 
 
-def publish_maps(maps_path, publishing_path):
+def publish_maps(maps_path, publishing_path, geonames_provider):
     __publish_maps(maps_path, publishing_path)
-    __rebuild_index(publishing_path)
+    __rebuild_index(publishing_path, geonames_provider)
 
 
 def __publish_maps(maps_path, publishing_path):
@@ -41,7 +40,7 @@ def __publish_maps(maps_path, publishing_path):
         shutil.copy2(source_file, publishing_path)
 
 
-def __rebuild_index(publishing_path):
+def __rebuild_index(publishing_path, geonames_provider):
     locales_path = os.path.join(publishing_path, 'locales')
     if not os.path.isdir(locales_path):
         os.mkdir(locales_path)
@@ -49,7 +48,7 @@ def __rebuild_index(publishing_path):
     maps_index = sorted(__create_index(publishing_path), key=lambda k: k.uid)
     write_as_json_file(maps_index, os.path.join(publishing_path, 'index.json'))
 
-    localizations = __create_locales((map.geoname_id for map in maps_index))
+    localizations = __create_locales(geonames_provider, (map.geoname_id for map in maps_index))
 
     for locale in localizations['locales']:
         write_as_json_file(localizations['locales'][locale],
@@ -59,8 +58,7 @@ def __rebuild_index(publishing_path):
                        os.path.join(locales_path, 'default.json'))
 
 
-def __create_locales(geoname_ids):
-    geonames_provider = GeoNamesProvider()
+def __create_locales(geonames_provider, geoname_ids):
 
     cities = geonames_provider.get_cities_info(geoname_ids)
 

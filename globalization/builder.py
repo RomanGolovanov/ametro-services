@@ -27,24 +27,18 @@ __CITIES_GEO_NAME_FILE = 'cities1000.zip'
 __COUNTRIES_GEO_NAME_FILE = 'countryInfo.zip'
 __ALT_GEO_NAME_FILE = 'alternateNames.zip'
 
-
 __IGNORE_LIST = {1795564, 2928809, 8555918, 6691781}
 
 
-def build_geonames_database(geonames_path, force=False):
-    dst_path = os.path.dirname(__file__)
-    database_path = os.path.join(dst_path, 'geonames.db')
-    if os.path.isfile(database_path):
+def build_geonames_database(geonames_path, geoname_db_path, force=False):
+    if os.path.isfile(geoname_db_path):
         if not force:
             return
         else:
-            os.remove(database_path)
-
-    if not os.path.isdir(dst_path):
-        os.mkdir(dst_path)
+            os.remove(geoname_db_path)
 
     print('Create GeoNames database')
-    cnn = sqlite3.connect(database_path)
+    cnn = sqlite3.connect(geoname_db_path)
     c = cnn.cursor()
     c.execute(__CREATE_CITY_TABLE_QUERY)
     c.execute(__CREATE_COUNTRY_TABLE_QUERY)
@@ -153,10 +147,10 @@ def __parse_alt_name(text, context):
 
     priority = 0
     if is_pref == '1':
-        priority+=2
+        priority += 2
 
     if is_short == '1':
-        priority+=1
+        priority += 1
 
     return geoname_id, language, name, name.lower(), priority
 

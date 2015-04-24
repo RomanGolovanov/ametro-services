@@ -20,6 +20,9 @@ MAPS_SOURCE_URL = 'http://pub.skiif.org/pmetro-mirror/'
 
 base_dir = ''
 
+GEONAMES_PATH = os.path.join(base_dir, 'geonames')
+GEONAMES_DB = os.path.join(GEONAMES_PATH, 'geonames.db')
+
 CACHE_PATH = os.path.join(base_dir, 'cache')
 IMPORT_PATH = os.path.join(base_dir, 'import')
 PUBLISHING_PATH = os.path.join(base_dir, 'www')
@@ -27,7 +30,7 @@ TEMP_PATH = os.path.join(base_dir, 'tmp')
 LOG_BASE_PATH = os.path.join(base_dir, 'logs')
 LOG_PATH = os.path.join(LOG_BASE_PATH, datetime.datetime.now().strftime("%Y%m%d.%H%M%S.%f"))
 
-ensure_directories_created([CACHE_PATH, IMPORT_PATH, TEMP_PATH, LOG_BASE_PATH, LOG_PATH, PUBLISHING_PATH])
+ensure_directories_created([GEONAMES_PATH, CACHE_PATH, IMPORT_PATH, TEMP_PATH, LOG_BASE_PATH, LOG_PATH, PUBLISHING_PATH])
 
 APP_LOG = CompositeLog([
     ConsoleLog(level=LogLevel.Info),
@@ -40,4 +43,4 @@ APP_LOG = CompositeLog([
 ini_files.LOG = APP_LOG
 pmz_transports.LOG = APP_LOG
 
-build_geonames_database('geonames')
+build_geonames_database(GEONAMES_PATH, GEONAMES_DB)

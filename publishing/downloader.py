@@ -35,14 +35,15 @@ MAP_NAME_FIX = {
 
 
 class MapDownloader(object):
-    def __init__(self, service_url, cache_path, temp_path, log=EmptyLog()):
+    def __init__(self, service_url, cache_path, temp_path, logger, geonames_provider):
 
         self.__download_chunk_size = 16 * 1024
         self.__service_url = service_url
         self.__cache_path = cache_path
         self.__index_path = os.path.join(cache_path, 'index.json')
-        self.__log = log
+        self.__logger = logger
         self.__temp_path = temp_path
+        self.__geonames_provider = geonames_provider
 
     def refresh(self, force=False):
         remote_maps = list(self.__download_map_index())
@@ -51,7 +52,6 @@ class MapDownloader(object):
         else:
             old_catalog = load_catalog(self.__index_path)
 
-        geonames_provider = GeoNamesProvider()
         cache_catalog = MapCatalog()
         for new_map in remote_maps:
             old_map = old_catalog.find_by_file(new_map['file'])
@@ -60,12 +60,12 @@ class MapDownloader(object):
                 city_name = new_map['city']
                 country_name = new_map['country']
 
-                city_info = geonames_provider.find_city(city_name, country_name)
+                city_info = self.__geonames_provider.find_city(city_name, country_name)
                 if city_info is None:
-                    self.__log.warning('Not found %s, [%s]/[%s], skipped' % (new_map['file'], city_name, country_name))
+                    self.__logger.warning('Not found %s, [%s]/[%s], skipped' % (new_map['file'], city_name, country_name))
                     continue
 
-                self.__log.debug('Recognised %s,%s,%s in [%s]/[%s]' % (
+                self.__logger.debug('Recognised %s,%s,%s in [%s]/[%s]' % (
                     city_info.geoname_id, city_info.name, city_info.country, city_name, country_name))
 
                 downloading_map = {
@@ -79,13 +79,13 @@ class MapDownloader(object):
                 self.__download_map(downloading_map)
                 cache_catalog.add_map(downloading_map)
             else:
-                self.__log.info('Map [%s] already downloaded.' % new_map['file'])
+                self.__logger.info('Map [%s] already downloaded.' % new_map['file'])
                 cache_catalog.add_map(old_map)
 
         for old_map in old_catalog.maps:
             if not any([m for m in remote_maps if m['file'] == old_map['file']]):
                 os.remove(os.path.join(self.__cache_path, old_map['file']))
-                self.__log.warning('Map [%s] removed as obsolete.' % old_map['file'])
+                self.__logger.warning('Map [%s] removed as obsolete.' % old_map['file'])
 
         cache_catalog.save(self.__index_path)
 
@@ -99,13 +99,13 @@ class MapDownloader(object):
         for el in ET.fromstring(xml_maps):
             file_name = el.find('Zip').attrib['Name']
             if file_name in IGNORE_MAP_LIST:
-                self.__log.info('Ignored [%s].' % file_name)
+                self.__logger.info('Ignored [%s].' % file_name)
                 continue
 
             city_name = el.find('City').attrib['CityName']
             country_name = el.find('City').attrib['Country']
             if country_name == ' Программа' or city_name == '':
-                self.__log.info('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
+                self.__logger.info('Skipped %s, [%s]/[%s]' % (file_name, city_name, country_name))
                 continue
             if city_name in MAP_NAME_FIX:
                 city_name = MAP_NAME_FIX[city_name]
@@ -128,7 +128,7 @@ class MapDownloader(object):
             try:
                 urllib.request.urlretrieve(self.__service_url + map_file, tmp_path)
             except URLError:
-                self.__log.warning('Map [%s] download error, wait and retry.' % map_file)
+                self.__logger.warning('Map [%s] download error, wait and retry.' % map_file)
                 sleep(0.5)
                 continue
 
@@ -138,12 +138,12 @@ class MapDownloader(object):
                 os.remove(map_path)
 
             os.rename(tmp_path, map_path)
-            self.__log.info('Downloaded [%s]' % map_file)
+            self.__logger.info('Downloaded [%s]' % map_file)
             return
         raise IOError('Max retries for downloading file [%s] reached. Terminate.' % map_file)
 
     def __fill_map_info(self, map_file, map_item):
-        self.__log.info('Extract map info from [%s]' % map_file)
+        self.__logger.info('Extract map info from [%s]' % map_file)
         temp_folder = os.path.join(self.__temp_path, uuid.uuid1().hex)
         try:
             unzip_file(map_file, temp_folder)
@@ -162,6 +162,6 @@ class MapDownloader(object):
 
         if name is None:
             name = uuid.uuid1().hex
-            self.__log.warning('Empty NAME map property in file \'%s\', used UID %s' % (ini['__FILE_NAME__'], name))
+            self.__logger.warning('Empty NAME map property in file \'%s\', used UID %s' % (ini['__FILE_NAME__'], name))
 
         map_item['map_id'] = name
