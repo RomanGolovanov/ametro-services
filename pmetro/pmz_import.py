@@ -1,9 +1,7 @@
 import os
 import shutil
-import uuid
 
 from PIL import Image
-from globalization.provider import GeoNamesProvider
 
 from pmetro import log
 from pmetro.graphics import cubic_interpolate
@@ -33,23 +31,6 @@ def convert_map(geoname_id, file_name, timestamp, src_path, dst_path, logger, ge
     container = importer.import_pmz(src_path, geoname_id, file_name, timestamp)
     __convert_resources(container, src_path, dst_path, logger)
     store_model(container, dst_path)
-
-
-def __extract_map_info(self, map_path, map_item):
-    ini = deserialize_ini(find_file_by_extension(map_path, '.cty'))
-    name = get_ini_attr(ini, 'Options', 'Name')
-    comments = get_ini_composite_attr(ini, 'Options', 'Comment')
-    authors = get_ini_composite_attr(ini, 'Options', 'MapAuthors')
-
-    if name is None:
-        name = uuid.uuid1().hex
-        self.__log.warning('Empty NAME map property in file \'%s\', used UID %s' % (ini['__FILE_NAME__'], name))
-
-    map_item['map_id'] = name
-    if comments is not None:
-        map_item['comments'] = comments
-    if authors is not None:
-        map_item['description'] = authors
 
 
 def __convert_resources(map_container, src_path, dst_path, logger):
@@ -158,8 +139,15 @@ class PmzImporter(object):
         city_info = self.__geoname_provider.get_city_info(geoname_id)
 
         container = MapContainer()
-        container.meta = MapMetadata(geoname_id, file_name, timestamp, city_info.latitude, city_info.longitude, None,
-                                     'Imported from http://pmetro.su')
+        container.meta = MapMetadata(geoname_id,
+                                     file_name,
+                                     timestamp,
+                                     city_info.latitude,
+                                     city_info.longitude,
+                                     text_index_table.as_text_id(self.__extract_map_description(path),
+                                                                 text_type=TEXT_AS_COMMON_LANGUAGE),
+                                     text_index_table.as_text_id('Imported from http://pmetro.su',
+                                                                 text_type=TEXT_AS_COMMON_LANGUAGE))
         container.transports = imported_transports
         container.schemes = imported_schemes
 
@@ -172,8 +160,23 @@ class PmzImporter(object):
         self.__logger.info(
             "Map loaded, text compression: {0}, text size: {1}".format(text_index_table.get_compression(),
                                                                        text_index_table.get_text_length()))
-
         return container
+
+    @staticmethod
+    def __extract_map_description(map_path):
+        ini = deserialize_ini(find_file_by_extension(map_path, '.cty'))
+        comments = get_ini_composite_attr(ini, 'Options', 'Comment')
+        authors = get_ini_composite_attr(ini, 'Options', 'MapAuthors')
+
+        lines = []
+        if comments is not None:
+            lines.append(comments)
+        if authors is not None:
+            lines.append(authors)
+
+        if not lines:
+            return None
+        return '\n'.join(lines)
 
     def __validate(self, container):
 
