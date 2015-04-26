@@ -10,9 +10,9 @@ from pmetro.serialization import write_as_json_file
 
 
 class MapIndexEntity(object):
-    def __init__(self, uid, geoname_id, file, size, timestamp, transports, latitude, longitude):
+    def __init__(self, uid, city_id, file, size, timestamp, transports, latitude, longitude):
         self.uid = uid
-        self.geoname_id = geoname_id
+        self.city_id = city_id
         self.file = file
         self.size = size
         self.timestamp = timestamp
@@ -23,7 +23,7 @@ class MapIndexEntity(object):
 
 def publish_maps(maps_path, publishing_path, geonames_provider):
     __publish_maps(maps_path, publishing_path)
-    __rebuild_index(publishing_path, geonames_provider)
+    __rebuild_cities_index(publishing_path, geonames_provider)
 
 
 def __publish_maps(maps_path, publishing_path):
@@ -40,26 +40,27 @@ def __publish_maps(maps_path, publishing_path):
         shutil.copy2(source_file, publishing_path)
 
 
-def __rebuild_index(publishing_path, geonames_provider):
+def __rebuild_cities_index(publishing_path, geonames_provider):
     locales_path = os.path.join(publishing_path, 'locales')
     if not os.path.isdir(locales_path):
         os.mkdir(locales_path)
 
     maps_index = sorted(__create_index(publishing_path), key=lambda k: k.uid)
     write_as_json_file(maps_index, os.path.join(publishing_path, 'index.json'))
+    write_as_json_file(dict(timestamp=max(maps_index, key=lambda x: x.timestamp).timestamp),
+                       os.path.join(publishing_path, 'timestamp.json'))
 
-    localizations = __create_locales(geonames_provider, (map.geoname_id for map in maps_index))
+    localizations = __create_localized_cities_list(geonames_provider, (m.city_id for m in maps_index))
 
     for locale in localizations['locales']:
         write_as_json_file(localizations['locales'][locale],
-                           os.path.join(locales_path, '{0}.json'.format(locale)))
+                           os.path.join(locales_path, 'cities.{0}.json'.format(locale)))
 
     write_as_json_file(localizations['locales'][localizations['default_locale']],
-                       os.path.join(locales_path, 'default.json'))
+                       os.path.join(locales_path, 'cities.default.json'))
 
 
-def __create_locales(geonames_provider, geoname_ids):
-
+def __create_localized_cities_list(geonames_provider, geoname_ids, show_defaults=False):
     cities = geonames_provider.get_cities_info(geoname_ids)
 
     all_ids = set([c.geoname_id for c in cities] + [c.country_geoname_id for c in cities])
@@ -83,11 +84,19 @@ def __create_locales(geonames_provider, geoname_ids):
                 country_name = city_info.country
                 defaults.append('country')
 
-            locale[city_info.geoname_id] = (
-                city_name,
-                country_name,
-                city_info.iso,
-                ','.join(defaults) if any(defaults) else None)
+            if show_defaults:
+                locale_entity = (
+                    city_name,
+                    country_name,
+                    city_info.iso,
+                    ','.join(defaults) if any(defaults) else None)
+            else:
+                locale_entity = (
+                    city_name,
+                    country_name,
+                    city_info.iso)
+
+            locale[city_info.geoname_id] = locale_entity
 
         locales[language_code] = locale
 
