@@ -68,7 +68,7 @@ def __create_localized_cities_list(geonames_provider, geoname_ids, show_defaults
     locales = dict()
     for language_code in LANGUAGE_SET:
         names = geonames_provider.get_names_for_language(all_ids, language_code)
-        locale = dict()
+        locale = []
         for city_info in cities:
 
             defaults = []
@@ -86,17 +86,19 @@ def __create_localized_cities_list(geonames_provider, geoname_ids, show_defaults
 
             if show_defaults:
                 locale_entity = (
+                    city_info.geoname_id,
                     city_name,
                     country_name,
                     city_info.iso,
                     ','.join(defaults) if any(defaults) else None)
             else:
                 locale_entity = (
+                    city_info.geoname_id,
                     city_name,
                     country_name,
                     city_info.iso)
 
-            locale[city_info.geoname_id] = locale_entity
+            locale.append(locale_entity)
 
         locales[language_code] = locale
 
