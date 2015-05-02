@@ -418,6 +418,7 @@ class PmzSchemeImporter(object):
         scheme.name = name
 
         scheme.name_text_id = self.__text_index_table.as_text_id(display_name)
+        print(display_name)
         scheme.type_text_id = self.__text_index_table.as_text_id(type_name, TEXT_AS_COMMON_LANGUAGE)
 
         scheme.images = self.__get_images_links(file, as_quoted_list(map_files))

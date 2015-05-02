@@ -57,6 +57,7 @@ class TextTable(object):
 class TextIndexTable(object):
     def __init__(self):
         self.texts = dict()
+        self.texts_reverse = dict()
         self.texts_counter = dict()
         self.counter = 0
 
@@ -73,13 +74,14 @@ class TextIndexTable(object):
         text_id = self.counter
 
         self.texts[text_key] = text_id
+        self.texts_reverse[text_id] = text
         self.texts_counter[text_key] = 1
         self.counter += 1
 
         return text_id
 
     def get_text(self, text_id):
-        return self.texts.get(text_id, None)
+        return self.texts_reverse[text_id]
 
     def get_text_table(self):
         return TextTable(
