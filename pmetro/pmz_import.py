@@ -418,7 +418,6 @@ class PmzSchemeImporter(object):
         scheme.name = name
 
         scheme.name_text_id = self.__text_index_table.as_text_id(display_name)
-        print(display_name)
         scheme.type_text_id = self.__text_index_table.as_text_id(type_name, TEXT_AS_COMMON_LANGUAGE)
 
         scheme.images = self.__get_images_links(file, as_quoted_list(map_files))
@@ -547,6 +546,8 @@ class PmzSchemeImporter(object):
             else:
                 if (to_id, from_id) in additional_nodes:
                     pts, is_spline = additional_nodes[(to_id, from_id)]
+                    if pts:
+                        pts = list(reversed(pts))
 
             if len(pts) == 1 and pts[0] in PmzSchemeImporter.empty_coord:
                 removed_segments.append(segment_id)
