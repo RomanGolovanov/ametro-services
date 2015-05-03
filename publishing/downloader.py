@@ -69,7 +69,7 @@ class MapDownloader(object):
                     city_info.geoname_id, city_info.name, city_info.country, city_name, country_name))
 
                 downloading_map = {
-                    'geoname_id': city_info.geoname_id,
+                    'city_id': city_info.geoname_id,
                     'file': new_map['file'],
                     'size': new_map['size'],
                     'timestamp': new_map['timestamp'],

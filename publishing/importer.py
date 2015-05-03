@@ -73,7 +73,7 @@ class MapImporter(object):
             if not os.path.isdir(converted_folder):
                 os.mkdir(converted_folder)
 
-            convert_map(map_info['geoname_id'], map_info['file'], map_info['timestamp'], map_folder, converted_folder,
+            convert_map(map_info['city_id'], map_info['file'], map_info['timestamp'], map_folder, converted_folder,
                         self.__log, self.__geoname_provider)
 
             zip_folder(converted_folder, importing_map_path)

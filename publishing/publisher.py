@@ -60,8 +60,8 @@ def __rebuild_cities_index(publishing_path, geonames_provider):
                        os.path.join(locales_path, 'cities.default.json'))
 
 
-def __create_localized_cities_list(geonames_provider, geoname_ids, show_defaults=False):
-    cities = geonames_provider.get_cities_info(geoname_ids)
+def __create_localized_cities_list(geonames_provider, city_ids, show_defaults=False):
+    cities = geonames_provider.get_cities_info(city_ids)
 
     all_ids = set([c.geoname_id for c in cities] + [c.country_geoname_id for c in cities])
 
@@ -111,7 +111,7 @@ def __create_index(maps_path):
         meta = __get_map_metadata(full_map_file_path)
         yield MapIndexEntity(
             meta['map_id'],
-            meta['geoname_id'],
+            meta['city_id'],
             map_file,
             os.path.getsize(full_map_file_path),
             meta['timestamp'],

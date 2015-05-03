@@ -25,10 +25,10 @@ from pmetro.serialization import store_model
 from pmetro.vec2svg import convert_vec_to_svg
 
 
-def convert_map(geoname_id, file_name, timestamp, src_path, dst_path, logger, geoname_provider):
+def convert_map(city_id, file_name, timestamp, src_path, dst_path, logger, geoname_provider):
     logger.message("Begin processing %s" % src_path)
     importer = PmzImporter(logger, geoname_provider)
-    container = importer.import_pmz(src_path, geoname_id, file_name, timestamp)
+    container = importer.import_pmz(src_path, city_id, file_name, timestamp)
     __convert_resources(container, src_path, dst_path, logger)
     store_model(container, dst_path)
 
@@ -108,7 +108,7 @@ class PmzImporter(object):
         self.__logger = logger
         self.__geoname_provider = geoname_provider
 
-    def import_pmz(self, path, geoname_id, file_name, timestamp):
+    def import_pmz(self, path, city_id, file_name, timestamp):
 
         station_index = StationIndex()
         text_index_table = TextIndexTable()
@@ -136,10 +136,10 @@ class PmzImporter(object):
 
         imported_schemes = scheme_importer.import_schemes()
 
-        city_info = self.__geoname_provider.get_city_info(geoname_id)
+        city_info = self.__geoname_provider.get_city_info(city_id)
 
         container = MapContainer()
-        container.meta = MapMetadata(geoname_id,
+        container.meta = MapMetadata(city_id,
                                      file_name,
                                      timestamp,
                                      city_info.latitude,
@@ -419,6 +419,7 @@ class PmzSchemeImporter(object):
 
         scheme.name_text_id = self.__text_index_table.as_text_id(display_name)
         scheme.type_text_id = self.__text_index_table.as_text_id(type_name, TEXT_AS_COMMON_LANGUAGE)
+        scheme.type_name = type_name
 
         scheme.images = self.__get_images_links(file, as_quoted_list(map_files))
         scheme.lines_width = line_width

@@ -10,7 +10,7 @@ class MapCatalog(object):
 
     def add(self, uid, file_name, size, timestamp):
         self.maps.append({
-            'geoname_id': uid,
+            'city_id': uid,
             'file': file_name,
             'size': size,
             'timestamp': timestamp,
@@ -64,7 +64,7 @@ class MapCatalog(object):
 
     @staticmethod
     def copy(src_map, dst_map):
-        dst_map['geoname_id'] = src_map['geoname_id']
+        dst_map['city_id'] = src_map['city_id']
         dst_map['map_id'] = src_map['map_id']
         dst_map['file'] = src_map['file']
         dst_map['size'] = src_map['size']

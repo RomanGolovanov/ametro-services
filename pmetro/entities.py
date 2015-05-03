@@ -1,8 +1,8 @@
 
 class MapMetadata(object):
-    def __init__(self, geoname_id, file_name, timestamp, latitude, longitude, description_text_id, comments_text_id):
+    def __init__(self, city_id, file_name, timestamp, latitude, longitude, description_text_id, comments_text_id):
         self.map_id = file_name
-        self.geoname_id = geoname_id
+        self.city_id = city_id
         self.file = file_name
         self.timestamp = timestamp
         self.latitude = latitude
@@ -61,6 +61,7 @@ class MapScheme(object):
         self.name = ''
         self.name_text_id = ''
         self.type_text_id = ''
+        self.type_name = ''
         self.width = 0
         self.height = 0
         self.images = []

@@ -39,6 +39,7 @@ def __get_scheme_meta(scheme, child_schemes):
         'root': scheme.name not in child_schemes,
         'name_text_id': scheme.name_text_id,
         'type_text_id': scheme.type_text_id,
+        'type_name': scheme.type_name
     }
 
 
