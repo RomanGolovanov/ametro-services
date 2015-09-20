@@ -8,12 +8,9 @@ import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
 
-from globalization.provider import GeoNamesProvider
 from pmetro.file_utils import unzip_file, find_file_by_extension
-from pmetro.log import EmptyLog
 from pmetro.ini_files import deserialize_ini, get_ini_attr
 from publishing.catalog import MapCatalog, load_catalog
-
 
 DOWNLOAD_MAP_MAX_RETRIES = 5
 

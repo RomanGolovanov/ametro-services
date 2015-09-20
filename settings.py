@@ -16,7 +16,7 @@ def ensure_directories_created(paths):
 FORCE_REFRESH = False
 FORCE_IMPORT = False
 
-MAPS_SOURCE_URL = 'http://pub.skiif.org/pmetro-mirror/'
+MAPS_SOURCE_URL = 'http://pmetro.su/'
 
 base_dir = ''
 

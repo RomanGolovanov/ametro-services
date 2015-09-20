@@ -1,0 +1,3 @@
+Pillow
+svgwrite
+transliterate
