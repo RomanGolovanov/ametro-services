@@ -50,3 +50,8 @@ __pycache__
 database.db
 database.bak
 
+cache/
+geonames/
+import/
+www/
+logs/

@@ -1,0 +1,27 @@
+
+server {
+    listen *:80;
+    server_name maps.ametro.org;
+
+    access_log  /var/log/nginx/maps.ametro.org/access.log;
+    root /opt/ametro-services/www;
+
+    autoindex off;
+    charset utf-8;
+}
+
+server {
+    listen 443 ssl spdy default_server;
+    server_name maps.ametro.org;
+    include /etc/nginx/ssl_maps_ametro.conf;
+
+    access_log  /var/log/nginx/maps.ametro.org/access.log;
+    root /opt/ametro-services/www;
+
+    autoindex off;
+    charset utf-8;
+}
+
+
+
+

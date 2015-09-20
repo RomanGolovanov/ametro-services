@@ -1,0 +1,7 @@
+#!/bin/sh
+cd /opt/ametro-services
+/usr/bin/python3 /opt/ametro-services/run-synchronization.py
+/bin/chown -R www-data:www-data /opt/ametro-services/www
+
+
+
