@@ -59,6 +59,11 @@ def __rebuild_cities_index(publishing_path, geonames_provider):
     write_as_json_file(localizations['locales'][localizations['default_locale']],
                        os.path.join(locales_path, 'cities.default.json'))
 
+    write_as_json_file(
+        [l for l in localizations['locales']],
+        os.path.join(locales_path, 'locales.json')
+    )
+
 
 def __create_localized_cities_list(geonames_provider, city_ids, show_defaults=False):
     cities = geonames_provider.get_cities_info(city_ids)
