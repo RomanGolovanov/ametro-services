@@ -44,7 +44,7 @@ def parse_line_delays(line_name, delays_section):
             LOG.error("Line \'{0}\' contains both Delays and Delay* parameters: {1}, used value from Delays".format(
                 line_name,
                 delays_section))
-        return dict([(key, value) for key, value in enumerate(as_delay_list(delays_section['Delays']))])
+        return list(dict([(key, value) for key, value in enumerate(as_delay_list(delays_section['Delays']))]).values())
 
     delays = {}
     for name in delays_section:
@@ -52,8 +52,9 @@ def parse_line_delays(line_name, delays_section):
             LOG.error("Line \'{0}\' contains unknown parameter {1}, ignored".format(line_name, name))
             continue
 
-        delays[__DELAYS_TYPES[name]] = delays_section[name]
-    return delays
+        delays[__DELAYS_TYPES[name]] = as_delay(delays_section[name])
+
+    return list(delays.values())
 
 
 def get_stations(stations_text):

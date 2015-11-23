@@ -188,7 +188,7 @@ class PmzImporter(object):
                 if not line.delays:
                     continue
 
-                if len(line.delays.items()) != delays_count:
+                if len(line.delays) != delays_count:
                     valid = False
                     self.__logger.error(
                         "Delays in line \'{0}\' ({1}) or {2}.trp is not valid for map delay list {3}".format(
