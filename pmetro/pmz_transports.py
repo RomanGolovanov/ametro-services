@@ -12,8 +12,8 @@ __TRANSPORT_TYPE_DICT = {}
 __TRANSPORT_TYPE_DEFAULT = 'Метро'
 
 __DELAYS_TYPES = {
-    'DelayDay': 0,
-    'DelayNight': 1
+    'delayday': 0,
+    'delaynight': 1
 }
 
 
@@ -48,11 +48,12 @@ def parse_line_delays(line_name, delays_section):
 
     delays = {}
     for name in delays_section:
-        if name not in __DELAYS_TYPES:
+        name_lower = str(name).lower()
+        if name_lower not in __DELAYS_TYPES:
             LOG.error("Line \'{0}\' contains unknown parameter {1}, ignored".format(line_name, name))
             continue
 
-        delays[__DELAYS_TYPES[name]] = as_delay(delays_section[name])
+        delays[__DELAYS_TYPES[name_lower]] = as_delay(delays_section[name])
 
     return list(delays.values())
 
@@ -124,8 +125,12 @@ def parse_station_and_delays(stations_text, drivings_text):
 
             if delays_iter.begin_bracket():
                 delays = delays_iter.next_bracket()
-                to_delay = delays[0]
-                from_delay = delays[1]
+                if len(delays) == 2:
+                    to_delay = delays[0]
+                    from_delay = delays[1]
+                else:
+                    to_delay = None
+                    from_delay = None
             else:
                 to_delay = delays_iter.next()
 

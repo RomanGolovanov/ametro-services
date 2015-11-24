@@ -185,17 +185,20 @@ class PmzImporter(object):
         delays_count = len(container.meta.delays)
         for transport in container.transports:
             for line in transport.lines:
-                if not line.delays:
+                if not line.delays or len(line.delays) == delays_count:
                     continue
 
-                if len(line.delays) != delays_count:
-                    valid = False
-                    self.__logger.error(
-                        "Delays in line \'{0}\' ({1}) or {2}.trp is not valid for map delay list {3}".format(
-                            line.name,
-                            line.delays,
-                            transport.name,
-                            container.meta.delays))
+                if len(line.delays) < delays_count:
+                    line.delays.extend([0 for x in range(delays_count - len(line.delays))])
+                    continue
+
+                valid = False
+                self.__logger.error(
+                    "Delays in line \'{0}\' ({1}) or {2}.trp is not valid for map delay list {3}".format(
+                        line.name,
+                        line.delays,
+                        transport.name,
+                        container.meta.delays))
 
         return valid
 
@@ -629,4 +632,3 @@ class PmzSchemeImporter(object):
             if uid in (from_id, to_id) and delay is not None and delay > 0:
                 return True
         return False
-

@@ -5,7 +5,7 @@ from settings import GEONAMES_DB
 
 
 city_id = 498817
-file = 'Peterburg.zip'
+file = 'Bangalore.zip'
 timestamp = 1242248400
 map_folder = 'src'
 converted_folder = 'dst'

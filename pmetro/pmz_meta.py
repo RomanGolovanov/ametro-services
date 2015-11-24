@@ -3,7 +3,6 @@ from pmetro.helpers import as_list
 from pmetro.ini_files import deserialize_ini
 from pmetro.ini_files import get_ini_attr
 
-
 def load_metadata(map_container, path):
     metadata_files = find_files_by_extension(path, '.cty')
     if not any(metadata_files):
