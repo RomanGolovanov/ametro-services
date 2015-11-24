@@ -155,11 +155,13 @@ class PmzImporter(object):
         load_metadata(container, path)
         load_texts(container, text_index_table)
 
-        self.__validate(container)
+        valid = self.__validate(container)
 
         self.__logger.info(
-            "Map loaded, text compression: {0}, text size: {1}".format(text_index_table.get_compression(),
-                                                                       text_index_table.get_text_length()))
+            "Map loaded, text compression: {0}, text size: {1}, valid: {2}".format(
+                text_index_table.get_compression(),
+                text_index_table.get_text_length(),
+                valid))
         return container
 
     @staticmethod
@@ -188,11 +190,12 @@ class PmzImporter(object):
                 if not line.delays or len(line.delays) == delays_count:
                     continue
 
+                valid = False
+
                 if len(line.delays) < delays_count:
-                    line.delays.extend([0 for x in range(delays_count - len(line.delays))])
+                    line.delays.extend([0 for _ in range(delays_count - len(line.delays))])
                     continue
 
-                valid = False
                 self.__logger.error(
                     "Delays in line \'{0}\' ({1}) or {2}.trp is not valid for map delay list {3}".format(
                         line.name,
