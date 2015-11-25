@@ -5,7 +5,7 @@ from pmetro.ini_files import get_ini_attr
 from pmetro.pmz_delays import __parse_delays
 
 
-def load_metadata(map_container, path):
+def load_metadata(map_container, path, text_index_table):
     metadata_files = find_files_by_extension(path, '.cty')
     if not any(metadata_files):
         raise FileNotFoundError('Cannot found .cty file in %s' % path)
@@ -13,7 +13,7 @@ def load_metadata(map_container, path):
     metadata = deserialize_ini(sorted(metadata_files)[0])
 
     delays = as_list(get_ini_attr(metadata, 'Options', 'DelayNames', 'Day,Night'))
-    map_container.meta.delays = __parse_delays(delays)
+    map_container.meta.delays = __parse_delays(delays, text_index_table)
     map_container.meta.transport_types = list(set([trp.type_name for trp in map_container.transports]))
     map_container.meta.transports = list([__get_transport_meta(trp) for trp in map_container.transports])
 

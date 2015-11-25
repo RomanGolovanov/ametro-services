@@ -45,7 +45,7 @@ __KNOWN_WEEKDAYS = {
 }
 
 
-def __parse_delays(lines):
+def __parse_delays(lines, text_index_table):
     delays = []
 
     for l in lines:
@@ -74,7 +74,7 @@ def __parse_delays(lines):
 
         delays.append(dict(
             type='custom',
-            name=name,
+            name_id=text_index_table.as_text_id(name),
             ranges=time_range,
             weekdays=weekdays))
 

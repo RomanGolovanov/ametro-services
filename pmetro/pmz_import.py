@@ -152,7 +152,7 @@ class PmzImporter(object):
         container.schemes = imported_schemes
 
         load_static(container, path)
-        load_metadata(container, path)
+        load_metadata(container, path, text_index_table)
         load_texts(container, text_index_table)
 
         valid = self.__validate(container)
