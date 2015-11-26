@@ -46,11 +46,12 @@ def __rebuild_cities_index(publishing_path, geonames_provider):
         os.mkdir(locales_path)
 
     maps_index = sorted(__create_index(publishing_path), key=lambda k: k.uid)
+    localizations = __create_localized_cities_list(geonames_provider, (m.city_id for m in maps_index))
+
     write_as_json_file(maps_index, os.path.join(publishing_path, 'index.json'))
+    write_as_json_file(localizations, os.path.join(publishing_path, 'locales.json'))
     write_as_json_file(dict(timestamp=max(maps_index, key=lambda x: x.timestamp).timestamp),
                        os.path.join(publishing_path, 'timestamp.json'))
-
-    localizations = __create_localized_cities_list(geonames_provider, (m.city_id for m in maps_index))
 
     for locale in localizations['locales']:
         write_as_json_file(localizations['locales'][locale],
@@ -130,5 +131,3 @@ def __get_map_metadata(map_path):
     with zipfile.ZipFile(map_path, 'r') as zip_file:
         index_json = codecs.decode(zip_file.read('index.json'), 'utf-8)')
         return json.loads(index_json)
-
-

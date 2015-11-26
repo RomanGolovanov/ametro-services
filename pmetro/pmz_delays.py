@@ -2,7 +2,8 @@ import re
 
 __RUSH_HOURS = ['08:00-10:00', '17:00-19:00']
 __DAY_RANGES = ['08:00-20:00']
-__NIGHT_RANGES = ['20:00-24:00', '00:00-08:00']
+__NIGHT_RANGES = ['20:00-24:00', '00:00-05:00']
+__EVENING_RANGES = ['19:00-24:00']
 __WORK_DAYS = 'workdays'
 __WEEK_END = 'weekend'
 
@@ -15,10 +16,10 @@ __KNOWN_DELAYS = {
 
     'Night': dict(type='night', ranges=__NIGHT_RANGES, weekdays=None),
     'Ночь': dict(type='night', ranges=__NIGHT_RANGES, weekdays=None),
-    'Вечер (вых.)': dict(type='night', ranges=__NIGHT_RANGES, weekdays=__WEEK_END),
-    'Вечер (раб.)': dict(type='night', ranges=__NIGHT_RANGES, weekdays=__WORK_DAYS),
 
-    'после 19.00': dict(type='evening', ranges=['19:00-24:00'], weekdays=None),
+    'Вечер (вых.)': dict(type='evening', ranges=__EVENING_RANGES, weekdays=__WEEK_END),
+    'Вечер (раб.)': dict(type='evening', ranges=__EVENING_RANGES, weekdays=__WORK_DAYS),
+    'после 19.00': dict(type='evening', ranges=__EVENING_RANGES, weekdays=None),
     'Утро': dict(type='mourning', ranges=['05:00-08:00'], weekdays=None),
 
     'Час-пик': dict(type='rush', ranges=__RUSH_HOURS, weekdays=__WORK_DAYS),
