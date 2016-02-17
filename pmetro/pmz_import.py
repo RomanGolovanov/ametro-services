@@ -406,11 +406,11 @@ class PmzSchemeImporter(object):
         additional_node_section = get_ini_section(ini, 'AdditionalNodes')
 
         transports = default_if_empty(
-            as_nullable_list(get_ini_attr(ini, 'Options', 'Transports', None)),
+            as_nullable_list(get_ini_attr(ini, 'Options', 'Transports', None).strip(',')),
             ['Metro'])
 
         default_transports = default_if_empty(
-            as_nullable_list(get_ini_attr(ini, 'Options', 'CheckedTransports', None)),
+            as_nullable_list(get_ini_attr(ini, 'Options', 'CheckedTransports', None).strip(',')),
             ['Metro'])
 
         display_name, type_name = \
