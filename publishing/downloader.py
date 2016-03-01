@@ -123,7 +123,7 @@ class MapDownloader(object):
             if os.path.isfile(tmp_path):
                 os.remove(tmp_path)
             try:
-                urllib.request.urlretrieve(self.__service_url + map_file, tmp_path)
+                urllib.request.urlretrieve(self.__service_url + '/download/' + map_file, tmp_path)
             except URLError:
                 self.__logger.warning('Map [%s] download error, wait and retry.' % map_file)
                 sleep(0.5)
