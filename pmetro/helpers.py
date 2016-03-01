@@ -67,6 +67,13 @@ def as_list(text='', splitter=','):
     return lst
 
 
+def as_nullable_list_stripped(text='', splitter=','):
+    if text is None:
+        return None
+    text = text.strip(',')
+    return as_list(text, splitter)
+
+
 def as_nullable_list(text='', splitter=','):
     if text is None:
         return None

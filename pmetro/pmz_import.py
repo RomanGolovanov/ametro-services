@@ -6,7 +6,7 @@ from PIL import Image
 from pmetro import log
 from pmetro.graphics import cubic_interpolate
 from pmetro.helpers import un_bugger_for_float, default_if_empty, as_points, round_points_array, \
-    as_int_point_list, as_int_rect_list, as_nullable_list, as_delay
+    as_int_point_list, as_int_rect_list, as_nullable_list, as_delay, as_nullable_list_stripped
 from pmetro.ini_files import get_ini_attr_int, get_ini_attr_float, get_ini_attr_bool, get_ini_composite_attr
 from pmetro.pmz_meta import load_metadata
 from pmetro.entities import MapScheme, MapSchemeLine, MapSchemeStation
@@ -406,12 +406,10 @@ class PmzSchemeImporter(object):
         additional_node_section = get_ini_section(ini, 'AdditionalNodes')
 
         transports = default_if_empty(
-            as_nullable_list(get_ini_attr(ini, 'Options', 'Transports', None).strip(',')),
-            ['Metro'])
+            as_nullable_list_stripped(get_ini_attr(ini, 'Options', 'Transports')), ['Metro'])
 
         default_transports = default_if_empty(
-            as_nullable_list(get_ini_attr(ini, 'Options', 'CheckedTransports', None).strip(',')),
-            ['Metro'])
+            as_nullable_list_stripped(get_ini_attr(ini, 'Options', 'CheckedTransports', None)), ['Metro'])
 
         display_name, type_name = \
             suggest_scheme_display_name_and_type(
