@@ -21,7 +21,9 @@ fi
 
 wget http://pmetro.su/download/pMetroSetup.exe -O ${PMETRO_FILE} -q
 
+rm -fR ${WORKING_PATH}/app/
 ${INNO_FILE} ${PMETRO_FILE}
+
 
 
 
