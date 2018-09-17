@@ -59,10 +59,8 @@ class MapIndexer(object):
 
         xml += '</FileList>\n'
 
-        with open(join(self.__index_path, 'Files.xml'), "w") as xml_file:
-            xml_file.write(xml)
-
-
+        with open(join(self.__index_path, 'Files.xml'), 'wb') as xml_file:
+            xml_file.write(xml.encode('windows-1251'))
 
     def __fill_map_info(self, map_item, pmz_file_path):
         temp_folder = os.path.join(self.__temp_path, uuid.uuid1().hex)
@@ -75,10 +73,13 @@ class MapIndexer(object):
         finally:
             shutil.rmtree(temp_folder)
 
-    def __pack_pmz(self, pmz_file, zip_file, pmz_file_name):
-        if not isfile(zip_file):
-            zf = zipfile.ZipFile(zip_file, mode='w')
-            try:
-                zf.write(pmz_file, pmz_file_name)
-            finally:
-                zf.close()
+    @staticmethod
+    def __pack_pmz(pmz_file, zip_file, pmz_file_name):
+        if isfile(zip_file):
+            os.remove(zip_file)
+
+        zf = zipfile.ZipFile(zip_file, mode='w')
+        try:
+            zf.write(pmz_file, pmz_file_name)
+        finally:
+            zf.close()
