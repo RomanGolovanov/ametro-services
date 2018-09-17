@@ -16,13 +16,15 @@ def ensure_directories_created(paths):
 FORCE_REFRESH = False
 FORCE_IMPORT = False
 
-MAPS_SOURCE_URL = 'http://pmetro.su/'
+MAPS_SOURCE_URL = 'https://www.ametro.org/autoupdate'
 
 base_dir = ''
 
 GEONAMES_PATH = os.path.join(base_dir, 'geonames')
 GEONAMES_DB = os.path.join(GEONAMES_PATH, 'geonames.db')
 
+PMETRO_PATH = os.path.join(base_dir, 'www/autoupdate')
+MANUAL_PATH = os.path.join(base_dir, 'manual/app')
 CACHE_PATH = os.path.join(base_dir, 'cache')
 IMPORT_PATH = os.path.join(base_dir, 'import')
 PUBLISHING_PATH = os.path.join(base_dir, 'www')

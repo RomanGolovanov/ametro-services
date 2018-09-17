@@ -55,3 +55,7 @@ geonames/
 import/
 www/
 logs/
+tmp/
+manual/innoextract*
+manual/*.exe
+manual/app
