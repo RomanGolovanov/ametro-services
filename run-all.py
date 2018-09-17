@@ -17,3 +17,4 @@ publication.import_maps(CACHE_PATH, force=FORCE_IMPORT)
 publish_maps(IMPORT_PATH, PUBLISHING_PATH, geonames_provider)
 
 APP_LOG.message('Publishing ended at %s' % (datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S.%f')))
+
