@@ -88,7 +88,8 @@ class MapDownloader(object):
 
     def __download_map_index(self):
 
-        xml_maps = urllib.request.urlopen(self.__service_url + 'Files.xml').read().decode('windows-1251')
+        xml_url = self.__service_url + 'Files.xml'
+        xml_maps = urllib.request.urlopen(xml_url).read().decode('windows-1251')
 
         with codecs.open(os.path.join(self.__cache_path, "Files.xml"), 'w', 'utf-8') as f:
             f.write(xml_maps)
@@ -117,15 +118,16 @@ class MapDownloader(object):
         map_path = os.path.join(self.__cache_path, map_file)
 
         retry = 0
+        map_url = self.__service_url + map_file
         while retry < DOWNLOAD_MAP_MAX_RETRIES:
             retry += 1
 
             if os.path.isfile(tmp_path):
                 os.remove(tmp_path)
             try:
-                urllib.request.urlretrieve(self.__service_url + '/download/' + map_file, tmp_path)
+                urllib.request.urlretrieve(map_url, tmp_path)
             except URLError:
-                self.__logger.warning('Map [%s] download error, wait and retry.' % map_file)
+                self.__logger.warning('Map [%s] download from url %s error, wait and retry.' % (map_file, map_url))
                 sleep(0.5)
                 continue
 
